@@ -11,7 +11,7 @@ describe('fixture compatibility', () => {
       path.join(fixturesDir, 'basic-session-sanitised.jsonl'),
       'utf-8'
     );
-    const turns = parseLines(content);
+    const { turns } = parseLines(content);
 
     expect(turns).toHaveLength(1);
     expect(turns[0].stopReason).toBe('end_turn');
@@ -25,7 +25,7 @@ describe('fixture compatibility', () => {
       path.join(fixturesDir, 'tool-use-session-sanitised.jsonl'),
       'utf-8'
     );
-    const turns = parseLines(content);
+    const { turns } = parseLines(content);
 
     // The fixture has: 1 streaming chunk (skipped), 1 tool_use turn, 1 end_turn follow-up
     expect(turns.length).toBeGreaterThanOrEqual(2);
@@ -40,7 +40,7 @@ describe('fixture compatibility', () => {
       path.join(fixturesDir, 'multi-turn-with-cache-sanitised.jsonl'),
       'utf-8'
     );
-    const turns = parseLines(content);
+    const { turns } = parseLines(content);
 
     expect(turns).toHaveLength(3);
 

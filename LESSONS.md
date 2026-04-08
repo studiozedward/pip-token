@@ -2,6 +2,26 @@
 
 A running log of non-obvious things learned during the build. Newest at the top. See `docs/REPO_SETUP.md` for the format and when to add an entry.
 
+## Rate limit events are logged in JSONL but not as API errors
+
+**Date:** 2026-04-08
+**Area:** `src/parsing/jsonlParser.ts`, `src/parsing/claudeCodeWatcher.ts`
+
+Claude Code DOES log rate limit events to the session JSONL. They appear as assistant-type lines with `"error": "rate_limit"` and `"isApiErrorMessage": true` at the top level, and `model: "<synthetic>"` (not a real API response). The earlier assumption that 429s were handled internally and never logged was wrong — the initial search missed them because the sample logs predated any actual limit hits.
+
+Critical dedup requirement: rate limits are account-wide, so every active session logs its own copy of the event. Stale sessions that resume during the same limit window also log one. Without dedup, a single limit hit with 5 active sessions would record 5 limit hits. The dedup window must be plan-tier-specific because Pro users can re-hit limits within minutes.
+
+---
+
+## sql.js wrapper persists the entire DB on every write
+
+**Date:** 2026-04-08
+**Area:** `src/data/db.ts`
+
+The `sql.js` wrapper calls `db.export()` + `fs.writeFileSync()` after every `run()` and `exec()`. With thousands of turns during a resync, this is O(n^2) disk I/O. Fixed by adding `beginBatch()` / `endBatch()` to defer persistence. Any bulk operation (resync, initial scan) must wrap in a batch.
+
+---
+
 ## Context utilisation undercounted when prompt caching is active
 
 **Date:** 2026-04-08

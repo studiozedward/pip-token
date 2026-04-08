@@ -71,6 +71,8 @@ class SqlJsPrepared implements PreparedLike {
 }
 
 class SqlJsWrapper implements DatabaseLike {
+  private batching = false;
+
   constructor(private db: SqlJsDatabase, private dbPath: string) {}
 
   prepare(sql: string): PreparedLike {
@@ -82,8 +84,24 @@ class SqlJsWrapper implements DatabaseLike {
     this.persist();
   }
 
-  /** Write the in-memory database to disk. */
+  /** Suppress disk writes until endBatch() is called. */
+  beginBatch(): void {
+    this.batching = true;
+  }
+
+  /** Flush to disk and resume normal persist-per-write behaviour. */
+  endBatch(): void {
+    this.batching = false;
+    this.forcePersist();
+  }
+
+  /** Write the in-memory database to disk (skipped during batch mode). */
   persist(): void {
+    if (this.batching) return;
+    this.forcePersist();
+  }
+
+  private forcePersist(): void {
     try {
       const data = this.db.export();
       fs.writeFileSync(this.dbPath, Buffer.from(data));
@@ -251,6 +269,18 @@ function runSchema(w: SqlJsWrapper): void {
  * Wipe all data tables but keep schema_version and settings.
  * Re-creates an initial window so the extension can continue operating.
  */
+/** Suppress disk writes — call endBatch() when done. */
+export function beginBatch(): void {
+  if (!wrapper) throw new Error('Database not initialized');
+  wrapper.beginBatch();
+}
+
+/** Flush to disk and resume normal persist behaviour. */
+export function endBatch(): void {
+  if (!wrapper) throw new Error('Database not initialized');
+  wrapper.endBatch();
+}
+
 export function resetAllData(): void {
   if (!wrapper) throw new Error('Database not initialized');
   wrapper.getRaw().exec(`

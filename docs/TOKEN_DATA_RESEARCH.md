@@ -100,11 +100,27 @@ No breakdown by system prompt, file content, conversation history, or tool defin
 
 ### Q5: How are 429 rate limit errors logged?
 
-**CONFIRMED — NOT observed** (Claude Code 2.1.87)
+**CONFIRMED — FOUND** (Claude Code 2.1.87, updated 2026-04-08)
 
-No 429 or rate limit error events were found in current logs. No specific error event type was identified. It is unclear whether Claude Code logs 429 responses to the JSONL at all, or handles them internally before they reach the log.
+Rate limit events ARE logged as assistant-type JSONL lines with a distinctive fingerprint:
 
-**Fallback applied.** Manual logging is the primary mechanism for v1. The "Pip-Token: Log limit hit" VS Code command and ABOUT page button will be implemented. Additionally, timing gap detection (unusually long pauses between turns) will be used as a heuristic signal. Automatic 429 detection will be revisited when a real 429 sample is captured.
+```json
+{
+  "type": "assistant",
+  "error": "rate_limit",
+  "isApiErrorMessage": true,
+  "message": {
+    "model": "<synthetic>",
+    "stop_reason": "stop_sequence",
+    "usage": { "input_tokens": 0, "output_tokens": 0, ... },
+    "content": [{ "type": "text", "text": "You've hit your limit · resets 4pm (Europe/London)" }]
+  }
+}
+```
+
+Detection keys: `error === "rate_limit"` AND `isApiErrorMessage === true` at the top level. The `model` is `"<synthetic>"` (not a real API response) and all token counts are zero.
+
+**Dedup required.** Rate limits are account-wide. When the limit trips, every active session logs its own `rate_limit` event. Stale sessions that wake up during the same limit window also log one. The parser deduplicates by checking the most recent recorded limit hit — if the new event is within N minutes of the last, it's skipped. The dedup window is plan-tier-specific (configured in `pricing.json`).
 
 ---
 

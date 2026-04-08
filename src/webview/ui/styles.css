@@ -786,8 +786,28 @@ body {
   font-size: 11px;
   color: var(--alarm-red);
 }
+.confirm-box--green {
+  border-color: var(--green-mid);
+  color: var(--green-bright);
+}
 .confirm-box .sync-buttons {
   padding-top: 6px;
+}
+.action-spinner {
+  padding: 8px 10px;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--green-bright);
+  animation: pulse-text 1s ease-in-out infinite;
+}
+.action-spinner--red {
+  color: var(--alarm-red);
+}
+@keyframes pulse-text {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
 
 /* ===== M5: Action buttons in about ===== */

@@ -1,9 +1,5 @@
 # Pip-Token — Glossary
 
-Single source of truth for terms used throughout Pip-Token's documentation and UI. When a definition needs to change, change it here and update any UI strings that reference it. Other documents (DESIGN.md, ARCHITECTURE.md, the in-app description text) should defer to this file rather than duplicating definitions.
-
----
-
 ## Sessions and projects
 
 ### Active session

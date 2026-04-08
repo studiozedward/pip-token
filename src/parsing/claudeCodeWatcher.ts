@@ -2,11 +2,15 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { parseLines } from './jsonlParser';
+import type { ParsedRateLimitEvent } from './jsonlParser';
 import { processTurn } from './tokenExtractor';
-import { checkForLimitHit, resetLimitHitDetector } from './limitHitDetector';
-import { insertLimitHit } from '../data/repositories/limitHitRepo';
+import { resetLimitHitDetector } from './limitHitDetector';
+import { insertLimitHit, getMostRecentLimitHitTimestamp } from '../data/repositories/limitHitRepo';
 import { closeWindow, getCurrentWindow, openNewWindow } from '../data/repositories/windowRepo';
+import { getSetting } from '../data/repositories/settingsRepo';
 import { getWatcherState, setWatcherState } from '../data/repositories/watcherStateRepo';
+import { beginBatch, endBatch } from '../data/db';
+import pricingData from '../domain/pricing.json';
 import { logger } from '../utils/logger';
 
 const CLAUDE_PROJECTS_DIR = path.join(
@@ -52,9 +56,14 @@ export class ClaudeCodeWatcher {
     logger.info('Watcher stopped');
   }
 
-  /** Re-scan all existing JSONL files from their current offsets. */
+  /** Re-scan all existing JSONL files from their current offsets (batched). */
   rescan(): void {
-    this.scanExistingFiles();
+    beginBatch();
+    try {
+      this.scanExistingFiles();
+    } finally {
+      endBatch();
+    }
   }
 
   private scanExistingFiles(): void {
@@ -108,34 +117,19 @@ export class ClaudeCodeWatcher {
       fs.closeSync(fd);
 
       const newData = buffer.toString('utf-8');
-      const turns = parseLines(newData);
+      const { turns, rateLimitEvents } = parseLines(newData);
 
       let newTurnsProcessed = 0;
       for (const turn of turns) {
         const isNew = processTurn(turn, projectDir);
         if (isNew) {
           newTurnsProcessed++;
-
-          // Check for limit hits
-          const limitHit = checkForLimitHit(turn);
-          if (limitHit) {
-            const currentWindow = getCurrentWindow();
-            if (currentWindow) {
-              insertLimitHit({
-                timestamp: limitHit.timestamp,
-                window_id: currentWindow.window_id,
-                detection_method: limitHit.detectionMethod,
-                peak_input_tokens: currentWindow.peak_input_tokens,
-                peak_output_tokens: currentWindow.peak_output_tokens,
-                offpeak_input_tokens: currentWindow.offpeak_input_tokens,
-                offpeak_output_tokens: currentWindow.offpeak_output_tokens,
-                notes: limitHit.notes,
-              });
-              closeWindow(currentWindow.window_id);
-              openNewWindow();
-            }
-          }
         }
+      }
+
+      // Process rate limit events with dedup
+      for (const evt of rateLimitEvents) {
+        this.handleRateLimitEvent(evt);
       }
 
       // Save offset
@@ -147,6 +141,39 @@ export class ClaudeCodeWatcher {
       }
     } catch (err) {
       logger.error(`Error processing ${filePath}`, err);
+    }
+  }
+
+  private handleRateLimitEvent(evt: ParsedRateLimitEvent): void {
+    // Dedup: skip if a limit hit was already recorded within the plan's dedup window
+    const planTier = getSetting('plan_tier') ?? 'pro';
+    const tierConfig = (pricingData.plan_tiers as Record<string, { limit_hit_dedup_minutes: number }>)[planTier];
+    const dedupMinutes = tierConfig?.limit_hit_dedup_minutes ?? 15;
+
+    const lastHitTs = getMostRecentLimitHitTimestamp();
+    if (lastHitTs) {
+      const gapMs = new Date(evt.timestamp).getTime() - new Date(lastHitTs).getTime();
+      if (Math.abs(gapMs) < dedupMinutes * 60_000) {
+        return; // duplicate within dedup window
+      }
+    }
+
+    const currentWindow = getCurrentWindow();
+    if (currentWindow) {
+      insertLimitHit({
+        timestamp: evt.timestamp,
+        window_id: currentWindow.window_id,
+        detection_method: 'explicit_429',
+        peak_input_tokens: currentWindow.peak_input_tokens,
+        peak_output_tokens: currentWindow.peak_output_tokens,
+        offpeak_input_tokens: currentWindow.offpeak_input_tokens,
+        offpeak_output_tokens: currentWindow.offpeak_output_tokens,
+        notes: evt.message,
+      });
+      closeWindow(currentWindow.window_id);
+      openNewWindow();
+      logger.info(`Rate limit detected at ${evt.timestamp}: ${evt.message}`);
+      this.onDataUpdated?.();
     }
   }
 }

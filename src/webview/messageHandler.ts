@@ -570,7 +570,7 @@ function handleCompleteOnboarding(): unknown | null {
 function handleResetHistory(): unknown | null {
   try {
     resetAllData();
-    return { type: 'settingsChanged', payload: { settings: getAllSettings() } };
+    return buildAboutInfoPage();
   } catch (err) {
     logger.error('Error resetting history', err);
     return null;

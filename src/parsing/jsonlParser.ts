@@ -18,30 +18,76 @@ export interface ParsedTurn {
   stopReason: string;
 }
 
-/** Parse a single JSONL line. Returns a ParsedTurn if it's a completed assistant turn, null otherwise. */
-export function parseLine(line: string): ParsedTurn | null {
-  if (!line.trim()) return null;
+/** A rate_limit event logged by Claude Code when the user hits their limit. */
+export interface ParsedRateLimitEvent {
+  sessionId: string;
+  timestamp: string;
+  message: string; // e.g. "You've hit your limit · resets 4pm (Europe/London)"
+}
 
-  let data: Record<string, unknown>;
-  try {
-    data = JSON.parse(line);
-  } catch {
-    logger.warn('Skipping malformed JSONL line');
-    return null;
+/** Parse a JSONL line as a rate_limit event. Returns null if it isn't one. */
+function parseRateLimitEvent(data: Record<string, unknown>): ParsedRateLimitEvent | null {
+  if (data.error !== 'rate_limit') return null;
+  if (data.isApiErrorMessage !== true) return null;
+
+  const message = data.message as Record<string, unknown> | undefined;
+  const content = message?.content as Array<{ type: string; text?: string }> | undefined;
+  const text = content?.find(c => c.type === 'text')?.text ?? '';
+
+  return {
+    sessionId: data.sessionId as string,
+    timestamp: data.timestamp as string,
+    message: text,
+  };
+}
+
+/** Result of parsing a chunk of JSONL lines. */
+export interface ParseResult {
+  turns: ParsedTurn[];
+  rateLimitEvents: ParsedRateLimitEvent[];
+}
+
+/** Parse multiple JSONL lines (e.g. from a file chunk). */
+export function parseLines(text: string): ParseResult {
+  const turns: ParsedTurn[] = [];
+  const rateLimitEvents: ParsedRateLimitEvent[] = [];
+
+  for (const line of text.split('\n')) {
+    if (!line.trim()) continue;
+
+    let data: Record<string, unknown>;
+    try {
+      data = JSON.parse(line);
+    } catch {
+      logger.warn('Skipping malformed JSONL line');
+      continue;
+    }
+
+    // Check for rate limit event first
+    const rateLimit = parseRateLimitEvent(data);
+    if (rateLimit) {
+      rateLimitEvents.push(rateLimit);
+      continue;
+    }
+
+    // Try parsing as a normal turn
+    const turn = parseLineFromData(data);
+    if (turn) {
+      turns.push(turn);
+    }
   }
 
-  const type = data.type as string | undefined;
+  return { turns, rateLimitEvents };
+}
 
-  // Only process assistant lines
+/** Parse a pre-parsed JSON object as an assistant turn. */
+function parseLineFromData(data: Record<string, unknown>): ParsedTurn | null {
+  const type = data.type as string | undefined;
   if (type !== 'assistant') return null;
 
   const message = data.message as Record<string, unknown> | undefined;
   if (!message) return null;
 
-  // CRITICAL: Only process completed turns, not streaming chunks.
-  // Lines with stop_reason === null are intermediate streaming chunks
-  // with partial output_tokens. The final line per requestId has the
-  // complete output_tokens count.
   const stopReason = message.stop_reason as string | null;
   if (stopReason === null || stopReason === undefined || stopReason === 'None') {
     return null;
@@ -67,14 +113,17 @@ export function parseLine(line: string): ParsedTurn | null {
   };
 }
 
-/** Parse multiple JSONL lines (e.g. from a file chunk). Returns completed turns only. */
-export function parseLines(text: string): ParsedTurn[] {
-  const turns: ParsedTurn[] = [];
-  for (const line of text.split('\n')) {
-    const turn = parseLine(line);
-    if (turn) {
-      turns.push(turn);
-    }
+/** Parse a single JSONL line. Returns a ParsedTurn if it's a completed assistant turn, null otherwise. */
+export function parseLine(line: string): ParsedTurn | null {
+  if (!line.trim()) return null;
+
+  let data: Record<string, unknown>;
+  try {
+    data = JSON.parse(line);
+  } catch {
+    logger.warn('Skipping malformed JSONL line');
+    return null;
   }
-  return turns;
+
+  return parseLineFromData(data);
 }

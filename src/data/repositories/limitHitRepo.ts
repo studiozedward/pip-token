@@ -40,6 +40,12 @@ export function getLimitHitsBetween(start: string, end: string): LimitHitRecord[
   return db.prepare('SELECT * FROM limit_hits WHERE timestamp >= ? AND timestamp < ? ORDER BY timestamp ASC').all(start, end) as unknown as LimitHitRecord[];
 }
 
+export function getMostRecentLimitHitTimestamp(): string | null {
+  const db = getDb();
+  const row = db.prepare('SELECT MAX(timestamp) as ts FROM limit_hits').get() as { ts: string | null } | undefined;
+  return row?.ts ?? null;
+}
+
 export function getMedianLimitHitTokens(): { peakTokens: number; offpeakTokens: number } | null {
   const db = getDb();
   const rows = db.prepare(`

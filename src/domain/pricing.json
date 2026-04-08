@@ -24,6 +24,12 @@
       "context_window": 200000
     }
   },
+  "plan_tiers": {
+    "free":    { "limit_hit_dedup_minutes": 5 },
+    "pro":     { "limit_hit_dedup_minutes": 15 },
+    "max_5x":  { "limit_hit_dedup_minutes": 60 },
+    "max_20x": { "limit_hit_dedup_minutes": 60 }
+  },
   "currency": {
     "base": "USD",
     "rates": {

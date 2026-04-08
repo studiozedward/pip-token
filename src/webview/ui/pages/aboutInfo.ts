@@ -137,6 +137,12 @@ function populateFromPayload(container: HTMLElement, payload: AboutInfoPayload):
     blipToggle.textContent = isOn ? 'ON' : 'OFF';
   }
 
+  // Clear any active spinners / confirm boxes
+  const resyncArea = container.querySelector('#resync-confirm') as HTMLElement | null;
+  if (resyncArea) resyncArea.innerHTML = '';
+  const resetArea = container.querySelector('#reset-confirm') as HTMLElement | null;
+  if (resetArea) resetArea.innerHTML = '';
+
   // Update info section
   if (payload.info) {
     const info = payload.info;
@@ -254,11 +260,11 @@ function attachEventListeners(container: HTMLElement): void {
 }
 
 function showResyncConfirm(container: HTMLElement): void {
-  const confirmArea = container.querySelector('#reset-confirm') as HTMLElement | null;
+  const confirmArea = container.querySelector('#resync-confirm') as HTMLElement | null;
   if (!confirmArea) return;
 
   confirmArea.innerHTML = `
-    <div class="confirm-box">
+    <div class="confirm-box confirm-box--green">
       This will rebuild all data from Claude Code's log files. Manual limit hits will be lost.
       <div class="sync-buttons">
         <button class="sync-btn cancel" id="resync-cancel">CANCEL</button>
@@ -279,7 +285,7 @@ function showResyncConfirm(container: HTMLElement): void {
   if (yesBtn) {
     yesBtn.addEventListener('click', () => {
       sendToExtension({ type: 'resyncData' });
-      confirmArea.innerHTML = '';
+      confirmArea.innerHTML = `<div class="action-spinner">RESYNCING\u2026</div>`;
     });
   }
 }
@@ -310,7 +316,7 @@ function showResetConfirm(container: HTMLElement): void {
   if (yesBtn) {
     yesBtn.addEventListener('click', () => {
       sendToExtension({ type: 'resetHistory' });
-      confirmArea.innerHTML = '';
+      confirmArea.innerHTML = `<div class="action-spinner action-spinner--red">CLEARING\u2026</div>`;
     });
   }
 }
@@ -345,6 +351,7 @@ export function renderAboutInfo(container: HTMLElement): void {
         <button class="action-btn" id="action-sync">SYNC WITH DASHBOARD</button>
         <button class="action-btn" id="action-limit-hit">LOG LIMIT HIT NOW</button>
         <button class="action-btn" id="action-resync">RESYNC DATA</button>
+        <div id="resync-confirm"></div>
         <button class="action-btn danger" id="action-reset">CLEAR ALL DATA</button>
         <div id="reset-confirm"></div>
 

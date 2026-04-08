@@ -8,7 +8,7 @@ Pip-Token gives Claude Code users visibility into token consumption, peak vs off
 
 It exists because Anthropic doesn't currently expose granular usage data through any official API or in-IDE surface, and developers regularly hit session limits without warning. The developer, StudioZedward, is an avid Reddit user and is sick of seeing posts about this flooding their feed. Pip-Token reads Claude Code's local session logs and turns them into something you can actually act on.
 
-## Features (v0.1)
+## Features (v0.1.3)
 
 - **Real-time session view** showing input/output token splits, peak/off-peak counters, burn rate, and time-to-limit estimates
 - **Context window tracker** showing how much of Claude's working memory is in use
@@ -108,7 +108,7 @@ Pip-Token is not affiliated with, endorsed by, or sponsored by Anthropic. It's a
 
 ### Database location
 
-Pip-Token stores its SQLite database in VS Code's global storage directory (typically `~/.vscode/extensions/globalStorage/studiozedward.pip-token/`). If you need to reset, use the **RESET HISTORY** button on the About page, or delete the `pip-token.db` file from that directory.
+Pip-Token stores its SQLite database in VS Code's global storage directory (typically `~/.vscode/extensions/globalStorage/studiozedward.pip-token/`). If you need to reset, use the **CLEAR ALL DATA** button on the About page, or delete the `pip-token.db` file from that directory. To rebuild your data from existing JSONL logs without losing settings, use **RESYNC DATA** instead.
 
 ### Extension not detecting sessions
 

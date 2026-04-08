@@ -1,32 +1,16 @@
-import { ParsedTurn } from './jsonlParser';
-import { logger } from '../utils/logger';
-
-export interface DetectedLimitHit {
-  timestamp: string;
-  detectionMethod: 'explicit_429' | 'timing_gap' | 'manual';
-  notes: string;
-}
-
 /**
- * Check if a turn indicates a limit hit.
- *
- * Timing gap detection has been disabled — it produced too many false
- * positives from normal work pauses (lunch, meetings, context switches)
- * and each false positive closed the active window, corrupting aggregates.
+ * Limit hit detection.
  *
  * Active detection methods:
- * - explicit_429: not yet implemented (waiting for a real 429 JSONL sample)
- * - manual: user clicks "I just hit a limit" in the UI
+ * - explicit_429: parsed from JSONL `error: "rate_limit"` events by the
+ *   watcher (claudeCodeWatcher.ts), with plan-tier-aware dedup
+ * - manual: user clicks "LOG LIMIT HIT NOW" in the About page
  *
- * This function currently always returns null. Limit hits are recorded
- * only via the manual logLimitHit message or future 429 detection.
+ * Timing gap detection was removed — it produced false positives from
+ * normal work pauses and corrupted window aggregates.
  */
-export function checkForLimitHit(_turn: ParsedTurn): DetectedLimitHit | null {
-  // TODO: add explicit_429 detection once we observe the error format in JSONL logs
-  return null;
-}
 
-/** Reset the detector state (no-op now that timing gap is disabled) */
+/** Reset the detector state (reserved for future stateful detection). */
 export function resetLimitHitDetector(): void {
-  // no-op
+  // no-op — explicit_429 detection is stateless (dedup via DB query)
 }

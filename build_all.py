@@ -272,7 +272,7 @@ body {
 # ============================================================================
 
 def titlebar():
-    return '<div class="titlebar"><span>&#9881; PIP-TOKEN v0.1</span><span>[SONNET 4.6]</span></div>'
+    return '<div class="titlebar"><span>&#9881; PIP-TOKEN v0.1.3</span><span>[SONNET 4.6]</span></div>'
 
 def topnav(active):
     items = ["LIVE", "STATS", "HISTORY", "TIPS", "ABOUT"]
@@ -488,6 +488,7 @@ PAGES["onboarding"] = ('Setup', None, [], None, onboarding_content)
 
 # ---------- LIVE / SESSION ----------
 live_session_content = f'''
+<div style="font-size:11px;color:#00aa2b;letter-spacing:1px;padding:6px 0 2px;">[ALL PROJECTS &#9662;]</div>
 <div class="body">
 <div class="statlist">
 {stat_row("INPUT TOKENS", "47,283", active=True)}
@@ -495,7 +496,7 @@ live_session_content = f'''
 {stat_row("PEAK TOKENS", "38,214")}
 {stat_row("OFF-PEAK TOKENS", "21,916")}
 {stat_row("BURN RATE", "1.2K/MIN")}
-{stat_row("TIME TO LIMIT", "~2H 14M")}
+{stat_row("EST. TIME TO LIMIT", "~2H 14M")}
 {stat_row("SESSION TIME", "1H 47M")}
 </div>
 {mascot("owl-live.png", "INPUT TOKENS are sent TO Claude &mdash; your prompts, file contents, and conversation history. Large codebases re-read each turn drive this up fast.")}
@@ -506,45 +507,32 @@ PAGES["live-session"] = ('Live Session', 'LIVE', ['SESSION','CONTEXT','CACHE'], 
 
 # ---------- LIVE / CONTEXT ----------
 live_context_content = f'''
+<div style="font-size:11px;color:#00aa2b;letter-spacing:1px;padding:6px 0 2px;">[pip-token &#9662;]</div>
 <div class="body">
 <div class="statlist">
-{stat_row("CONTEXT USED", "124,847", active=True)}
+{stat_row("EST. CONTEXT USED", "124,847", active=True)}
 {stat_row("CONTEXT MAX", "200,000")}
 {stat_row("UTILISATION", "62%")}
-{stat_row("SYSTEM PROMPT", "2,400")}
-{stat_row("LOADED FILES", "87,200")}
-{stat_row("CONVERSATION", "31,847")}
-{stat_row("TOOL DEFS", "3,400")}
 </div>
-{mascot("owl-live.png", "CONTEXT USED is total tokens loaded in Claude's working memory. Every new turn re-reads ALL of this &mdash; large contexts compound costs fast.")}
+{mascot("owl-live.png", "EST. CONTEXT USED is total tokens loaded in Claude's working memory. Every new turn re-reads ALL of this &mdash; large contexts compound costs fast.")}
 </div>
 <div class="fillbar-label"><span>CONTEXT FILL &mdash; 124,847 / 200,000</span></div>
 <div class="fillbar">
-<div style="width:1.2%;background:#00ff41"></div>
-<div style="width:43.6%;background:#00ff41;opacity:0.85"></div>
-<div style="width:15.9%;background:#00ff41;opacity:0.55"></div>
-<div style="width:1.7%;background:#00ff41;opacity:0.3"></div>
+<div style="width:62%;background:#00ff41"></div>
 <div style="flex:1;background:repeating-linear-gradient(45deg,#002200 0 4px,transparent 4px 8px)"></div>
 </div>
-<div class="fillbar-legend">
-<span>&#9608; SYS</span>
-<span style="opacity:0.85">&#9608; FILES</span>
-<span style="opacity:0.6">&#9608; CONVO</span>
-<span style="opacity:0.4">&#9608; TOOLS</span>
-<span style="margin-left:auto;color:#00aa2b">75,153 FREE</span>
-</div>
-{advisory("Files dominate your context. Consider /clear before next task to reset.")}
+{advisory("Context at 62%. Consider /clear before your next big task to free up working memory.")}
 '''
 PAGES["live-context"] = ('Live Context', 'LIVE', ['SESSION','CONTEXT','CACHE'], 'CONTEXT', live_context_content)
 
 # ---------- LIVE / CACHE ----------
 live_cache_content = f'''
+<div style="font-size:11px;color:#00aa2b;letter-spacing:1px;padding:6px 0 2px;">[pip-token &#9662;]</div>
 <div class="body">
 <div class="statlist">
 {stat_row("CACHE STATE", "FRESH", active=True)}
 {stat_row("IDLE TIME", "1M 23S")}
 {stat_row("CACHE SIZE", "87,200")}
-{stat_row("CACHE TYPE", "5-MIN")}
 {stat_row("HITS TODAY", "47")}
 {stat_row("MISSES TODAY", "12")}
 {stat_row("SAVED TODAY", "412K")}
@@ -597,11 +585,13 @@ PAGES["stats-tokens"] = ('Stats Tokens', 'STATS', ['TOKENS','COST'], 'TOKENS', s
 
 # ---------- STATS / COST ----------
 stats_cost_content = f'''
+<div style="font-size:10px;color:#00aa2b;padding:8px 0 4px;letter-spacing:0.5px;border:1px dashed #006a1a;padding:4px 8px;margin-top:6px;">
+&#9432; Costs are estimated API-equivalent values, not actual charges. Subscription users are not billed per token.
+</div>
 <div class="cards" style="padding-top:8px;">
-<div class="card active"><div class="label">7-DAY TOTAL</div><div class="value">&pound;3.40</div></div>
-<div class="card"><div class="label">DAILY AVG</div><div class="value">&pound;0.49</div></div>
-<div class="card"><div class="label">PROJECTED MONTH</div><div class="value">&pound;14.70</div></div>
-<div class="card"><div class="label">VS PLAN</div><div class="value">22%</div></div>
+<div class="card active"><div class="label">TOTAL</div><div class="value">&pound;3.40</div></div>
+<div class="card"><div class="label">AVG/DAY</div><div class="value">&pound;0.49</div></div>
+<div class="card"><div class="label">LIMIT HITS</div><div class="value">7</div></div>
 </div>
 <div class="body" style="padding: 10px 0 0;">
 <div class="statlist">
@@ -614,7 +604,7 @@ stats_cost_content = f'''
 </div>
 {mascot("owl-stats.png", "Cost is calculated from API list pricing. Subscription users don't pay this directly &mdash; it's a proxy for value extracted.", "small")}
 </div>
-{advisory("You're using ~22% of your &pound;16 Pro plan in API-equivalent value. Cache saved you &pound;1.24 this week.")}
+{advisory("Cache saved you &pound;1.24 this week. Keep breaks under 5 minutes to maintain your hit rate.")}
 '''
 PAGES["stats-cost"] = ('Stats Cost', 'STATS', ['TOKENS','COST'], 'COST', stats_cost_content)
 
@@ -675,37 +665,40 @@ tips_content = f'''
 </div>
 {advisory("Your cache hit rate is 80% &mdash; above average. Top 20% of users hit 90%+.")}
 '''
-PAGES["tips"] = ('Tips', 'TIPS', ['CACHE','PEAK','CONTEXT','OTHER'], 'CACHE', tips_content)
+PAGES["tips"] = ('Tips', 'TIPS', ['CACHE','PEAK HOURS','CONTEXT','OTHER'], 'CACHE', tips_content)
 
 # ---------- ABOUT ----------
 about_content = f'''
 <div class="body" style="padding-top:10px;">
 <div style="flex:1.5;">
-<div class="section-title">ABOUT</div>
-<div style="font-size:12px;line-height:1.6;color:#00ff41;padding-bottom:8px;">
-PIP-TOKEN tracks your Claude Code token usage in real time. Built for developers who keep hitting their limits and don't know why.
-</div>
 <div class="section-title">SETTINGS</div>
 <div class="aboutgrid">
-<div class="k">PLAN</div><div class="v">PRO</div>
-<div class="k">CURRENCY</div><div class="v">GBP</div>
-<div class="k">SOUND</div><div class="v"><span class="toggle on">ON</span></div>
-<div class="k">ALERTS</div><div class="v"><span class="toggle on">ON</span></div>
-<div class="k">PEAK TZ</div><div class="v">PT (AUTO)</div>
+<div class="k">PLAN TIER</div><div class="v">PRO</div>
+<div class="k">CURRENCY</div><div class="v">GBP (&pound;)</div>
+<div class="k">CRT FLICKER</div><div class="v"><span class="toggle on">ON</span></div>
+<div class="k">BLIP SOUND</div><div class="v"><span class="toggle on">ON</span></div>
 </div>
-<div class="section-title">SYSTEM</div>
+<div class="section-title">ACTIONS</div>
+<div style="display:flex;flex-direction:column;gap:4px;padding:4px 0;">
+<div style="padding:4px 8px;border:1px solid #00aa2b;font-size:11px;letter-spacing:0.5px;">[ SYNC WITH DASHBOARD ]</div>
+<div style="padding:4px 8px;border:1px solid #00aa2b;font-size:11px;letter-spacing:0.5px;">[ LOG LIMIT HIT NOW ]</div>
+<div style="padding:4px 8px;border:1px solid #00aa2b;font-size:11px;letter-spacing:0.5px;color:#00ff41;">[ RESYNC DATA ]</div>
+<div style="padding:4px 8px;border:1px solid #ff4141;font-size:11px;letter-spacing:0.5px;color:#ff4141;">[ CLEAR ALL DATA ]</div>
+</div>
+<div class="section-title">INFO</div>
 <div class="aboutgrid">
-<div class="k">VERSION</div><div class="v">v0.1.0</div>
-<div class="k">DATA SINCE</div><div class="v">14 MAR 2026</div>
-<div class="k">LIMIT HITS LOGGED</div><div class="v">11</div>
-<div class="k">LICENSE</div><div class="v">MIT</div>
+<div class="k">VERSION</div><div class="v">v0.1.3</div>
+<div class="k">DATABASE</div><div class="v">pip-token.db</div>
+<div class="k">SESSIONS</div><div class="v">3</div>
+<div class="k">TURNS</div><div class="v">1,247</div>
+<div class="k">LAST SYNC</div><div class="v">NEVER</div>
 </div>
 </div>
 {mascot("owl-about.png", "Pip-Token is open source. Star it, fork it, file issues at github.com/studiozedward/pip-token.", "small")}
 </div>
-{advisory("11 limit hits logged. Your personal thresholds are now calibrated &mdash; LIVE projections are reliable.")}
+{advisory("No dashboard sync recorded. Sync to include non-Claude-Code usage in projections.")}
 '''
-PAGES["about"] = ('About', 'ABOUT', [], None, about_content)
+PAGES["about"] = ('About', 'ABOUT', ['INFO','GLOSSARY'], 'INFO', about_content)
 
 # ============================================================================
 # WRITE HTML + SCREENSHOT

@@ -247,10 +247,39 @@ describe('parseLines', () => {
       makeAssistantLine(),
     ].join('\n');
 
-    const turns = parseLines(lines);
-    expect(turns).toHaveLength(1);
-    expect(turns[0].stopReason).toBe('end_turn');
-    expect(turns[0].sessionId).toBe('sess-001');
+    const result = parseLines(lines);
+    expect(result.turns).toHaveLength(1);
+    expect(result.rateLimitEvents).toHaveLength(0);
+    expect(result.turns[0].stopReason).toBe('end_turn');
+    expect(result.turns[0].sessionId).toBe('sess-001');
+  });
+
+  it('detects rate_limit events separately from turns', () => {
+    const lines = [
+      // Normal turn
+      makeAssistantLine(),
+      // Rate limit event
+      JSON.stringify({
+        type: 'assistant',
+        sessionId: 'sess-001',
+        timestamp: '2026-01-15T15:00:00.000Z',
+        error: 'rate_limit',
+        isApiErrorMessage: true,
+        message: {
+          model: '<synthetic>',
+          stop_reason: 'stop_sequence',
+          usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
+          content: [{ type: 'text', text: "You've hit your limit \u00b7 resets 4pm (Europe/London)" }],
+        },
+      }),
+    ].join('\n');
+
+    const result = parseLines(lines);
+    expect(result.turns).toHaveLength(1);
+    expect(result.rateLimitEvents).toHaveLength(1);
+    expect(result.rateLimitEvents[0].sessionId).toBe('sess-001');
+    expect(result.rateLimitEvents[0].timestamp).toBe('2026-01-15T15:00:00.000Z');
+    expect(result.rateLimitEvents[0].message).toContain('hit your limit');
   });
 
   it('returns empty array for all-skipped content', () => {
@@ -260,6 +289,8 @@ describe('parseLines', () => {
       '',
     ].join('\n');
 
-    expect(parseLines(lines)).toHaveLength(0);
+    const result = parseLines(lines);
+    expect(result.turns).toHaveLength(0);
+    expect(result.rateLimitEvents).toHaveLength(0);
   });
 });
