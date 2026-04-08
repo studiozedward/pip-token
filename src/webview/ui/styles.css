@@ -42,6 +42,7 @@ body {
   width: 100%;
   max-width: 720px;
   margin: 0 auto;
+  height: 100vh;
 }
 
 /* Scan lines overlay */
@@ -62,6 +63,9 @@ body {
 .inner {
   position: relative;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 /* Title bar */
@@ -72,6 +76,7 @@ body {
   font-size: 12px;
   color: var(--green-mid);
   padding-bottom: 6px;
+  flex-shrink: 0;
 }
 
 /* Top navigation (LIVE, STATS, HISTORY, TIPS, ABOUT) */
@@ -83,6 +88,7 @@ body {
   letter-spacing: 1px;
   padding: 4px 0 2px;
   cursor: default;
+  flex-shrink: 0;
 }
 
 .topnav-item {
@@ -109,6 +115,7 @@ body {
   padding: 6px 0 8px;
   border-bottom: 1px solid var(--green-mid);
   cursor: default;
+  flex-shrink: 0;
 }
 
 .subnav-item {
@@ -158,6 +165,7 @@ body {
 /* Mascot panel */
 .mascot {
   flex: 1;
+  min-width: 180px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -207,6 +215,7 @@ body {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
+  flex-shrink: 0;
 }
 
 .statusbar-segment {
@@ -317,6 +326,13 @@ body {
   padding-top: 3px;
 }
 
+/* About page layout */
+.about-left {
+  flex: 1.3;
+  max-width: 60%;
+  min-width: 0;
+}
+
 /* About grid */
 .aboutgrid {
   display: grid;
@@ -389,8 +405,8 @@ body {
   color: var(--bg);
 }
 
-/* CRT flicker animation for page transitions */
-@keyframes crt-flicker {
+/* CRT flicker — page transition flash */
+@keyframes crt-flash {
   0% { opacity: 1; filter: brightness(1); }
   25% { opacity: 0.7; filter: brightness(2.5); }
   50% { opacity: 0.85; filter: brightness(0.4); }
@@ -399,13 +415,27 @@ body {
 }
 
 .crt-flicker {
-  animation: crt-flicker 80ms linear;
+  animation: crt-flash 80ms linear;
+}
+
+/* CRT flicker overlay — JS controls opacity */
+.crt-flicker-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 255, 65, 0.03);
+  pointer-events: none;
+  z-index: 9;
+  opacity: 0;
+  transition: opacity 60ms linear;
 }
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
   .crt-flicker {
     animation: none !important;
+  }
+  .crt-flicker-overlay {
+    display: none !important;
   }
   .scanlines {
     animation: none !important;
@@ -466,8 +496,31 @@ body {
 
 /* Scrollable content area */
 .page-content {
-  min-height: 200px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: scroll;
   padding: 4px 0;
+  margin-right: -14px;
+  padding-right: 14px;
+}
+
+/* Custom scrollbar (Pip-Boy green) */
+.page-content {
+  scrollbar-color: var(--green-dim) transparent;
+  scrollbar-width: thin;
+}
+.page-content::-webkit-scrollbar {
+  width: 4px;
+}
+.page-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.page-content::-webkit-scrollbar-thumb {
+  background: var(--green-dim);
+  border-radius: 2px;
+}
+.page-content::-webkit-scrollbar-thumb:hover {
+  background: var(--green-mid);
 }
 
 /* Dropdown / selector */

@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { PipTokenPanel } from './webview/PipTokenPanel';
 import { initDb, closeDb } from './data/db';
 import { ClaudeCodeWatcher } from './parsing/claudeCodeWatcher';
+import { setResyncHandler } from './webview/messageHandler';
 import { logger } from './utils/logger';
 
 let watcher: ClaudeCodeWatcher | null = null;
@@ -18,6 +19,10 @@ export function activate(context: vscode.ExtensionContext) {
       watcher = new ClaudeCodeWatcher();
       watcher.start(() => {
         logger.info('New token data available');
+        PipTokenPanel.pushLiveUpdate();
+      });
+      setResyncHandler(() => {
+        watcher?.rescan();
         PipTokenPanel.pushLiveUpdate();
       });
     } catch (err) {

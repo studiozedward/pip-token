@@ -1,4 +1,5 @@
 import { getDb } from '../db';
+import { extractProjectName } from '../../utils/projectName';
 
 export interface SessionRecord {
   session_id: string;
@@ -11,15 +12,16 @@ export interface SessionRecord {
 
 export function upsertSession(sessionId: string, projectPath: string | null, timestamp: string): void {
   const db = getDb();
-  const projectName = projectPath ? projectPath.split('/').pop() ?? projectPath : null;
+  const projectName = projectPath ? extractProjectName(projectPath) : null;
 
   db.prepare(`
     INSERT INTO sessions (session_id, project_path, project_name, first_seen_at, last_activity_at, total_turns)
     VALUES (?, ?, ?, ?, ?, 1)
     ON CONFLICT(session_id) DO UPDATE SET
       last_activity_at = ?,
+      project_name = ?,
       total_turns = total_turns + 1
-  `).run(sessionId, projectPath, projectName, timestamp, timestamp, timestamp);
+  `).run(sessionId, projectPath, projectName, timestamp, timestamp, timestamp, projectName);
 }
 
 export function getActiveSessions(since: string): SessionRecord[] {

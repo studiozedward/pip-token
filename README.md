@@ -4,21 +4,21 @@
 
 ![Pip-Token LIVE session view](https://raw.githubusercontent.com/studiozedward/pip-token/main/mockups/screenshots/live-session.png)
 
-Pip-Token gives Claude Code users visibility into token consumption, peak vs off-peak usage, cache hygiene, and historical trends — all rendered in glorious phosphor green.
+Pip-Token gives Claude Code users visibility into token consumption, peak vs off-peak usage, cache hygiene, and historical trends.
 
-It exists because Anthropic doesn't currently expose granular usage data through any official API or in-IDE surface, and developers regularly hit session limits without warning. Pip-Token reads Claude Code's local session logs and turns them into something you can actually act on.
+It exists because Anthropic doesn't currently expose granular usage data through any official API or in-IDE surface, and developers regularly hit session limits without warning. The developer, StudioZedward, is an avid Reddit user and is sick of seeing posts about this flooding their feed. Pip-Token reads Claude Code's local session logs and turns them into something you can actually act on.
 
 ## Features (v0.1)
 
 - **Real-time session view** showing input/output token splits, peak/off-peak counters, burn rate, and time-to-limit estimates
 - **Context window tracker** showing how much of Claude's working memory is in use
 - **Cache hygiene monitor** that warns you before your prompt cache expires (and tells you how much it has saved you so far)
-- **Personalised limit thresholds** learned from your own usage instead of guessed from Anthropic's opaque numbers
+- **Personalised limit thresholds** learned from your own usage
 - **Cost estimates** in your local currency, calculated from API list pricing
-- **Contextual advisories** that surface based on your current data — not generic tips
+- **Contextual advisories** that surface based on your current data
 - **In-window status bar** pinned to every page, always showing peak status, context fill, burn rate, and week-to-date cost
-- **CRT flicker transitions and blip sound effects** because of course
-- **Onboarding flow** that configures plan tier, currency, and timezone
+- **CRT flicker transitions and blip sound effects** why not
+- **Onboarding flow** configures plan tier, currency, and timezone
 
 ## Screenshots
 
@@ -74,7 +74,7 @@ Pip-Token watches `~/.claude/projects/` for new entries in Claude Code's session
 
 It does not transmit any data anywhere. Everything is local to your machine.
 
-It does not predict Anthropic's exact session limits — those are opaque and change without notice. Instead, it tracks your actual limit-hit events and uses them to build personalised threshold estimates that improve as you use the tool.
+It does not predict Anthropic's exact session limits. Those are opaque and change without notice. Instead, it tracks your actual limit-hit events and uses them to build personalised threshold estimates that improve as you use the tool.
 
 For the full design rationale and honest acknowledgements of what we cannot measure, see [`docs/DESIGN.md`](docs/DESIGN.md) section 11.
 
@@ -89,23 +89,20 @@ For the full design rationale and honest acknowledgements of what we cannot meas
 
 ### Post-v0.1 candidates
 
-- STATS pages (rolling 7-day token and cost breakdowns)
-- HISTORY pages with bar charts and limit-hit markers
-- TIPS page with rotating tip library
-- Background watcher for Claude Code CLI usage outside VS Code
-- Multi-project filtering
 - Optional anonymous community data sharing for cold-start estimates
 - CSV export
 
 ## Contributing
 
-Contributions welcome. The most useful contribution right now is to **install and try it** — then file an issue if something is confusing, broken, or missing.
+Contributions are welcome. I'm one person and a novice coder who mostly relies on Claude to build products. I won't get everything right. If something doesn't look right, breaks, or would be useful, feel free to message me on X at @StudioZedward
+
+The most useful contribution right now is to **install and try it** then file an issue if something is confusing, broken, or missing.
 
 Issues and feature requests: [github.com/studiozedward/pip-token/issues](https://github.com/studiozedward/pip-token/issues)
 
 ## A note on Anthropic and Pip-Token
 
-Pip-Token is not affiliated with, endorsed by, or sponsored by Anthropic. It's a community tool built by a frustrated user. If Anthropic ships official usage tooling in their own products, Pip-Token will continue to exist for the historical analysis, the Pip-Boy aesthetic, and people who like having control over their own data.
+Pip-Token is not affiliated with, endorsed by, or sponsored by Anthropic. It's a community tool built by a frustrated user. If Anthropic ships official usage tooling in their own products, Pip-Token will continue to exist for the historical analysis, the aesthetic, and people who like having control over their own data.
 
 ## Troubleshooting
 

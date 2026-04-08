@@ -26,6 +26,10 @@ The webview is plain HTML/CSS/TypeScript — no React, no Vue, no Tailwind. Stat
 - Blip sound uses Web Audio API synthesis (no audio files)
 - The webview survives VS Code reloads (`retainContextWhenHidden: true`) — see ADR 0020
 
+## Settings changes and data refresh
+
+When a setting that affects computed data (currency, plan tier) changes, the webview must re-request pageData for the current page — not just update local UI state. The `settingsChanged` handler in `main.ts` sends a `requestPageData` message for these keys so the extension recomputes with the new value.
+
 ## Error display
 
 - Errors show as subtle in-panel Pip-Boy-themed warnings (e.g., "PARSER: 3 LINES SKIPPED")

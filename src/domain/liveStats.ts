@@ -11,12 +11,14 @@ import type { TurnCostInput } from './costCalculator';
 
 // --- Interfaces ---
 
+export type BurnRateState = number | 'LEARNING' | 'STALE';
+
 export interface SessionPageStats {
   inputTokens: number;
   outputTokens: number;
   peakTokens: number;
   offpeakTokens: number;
-  burnRate: number | null;       // tokens/min, null = LEARNING (< 5 min of data)
+  burnRate: BurnRateState;       // tokens/min, LEARNING = too few turns, STALE = timed out
   estTimeToLimit: number | null; // minutes, null = LEARNING (no limit hits)
   sessionTime: number;           // seconds
 }
@@ -41,7 +43,7 @@ export interface StatusBarStats {
   isPeak: boolean;
   contextUsed: number;
   contextMax: number;
-  burnRate: number | null;
+  burnRate: BurnRateState;
   weeklyTokens: number;
   weeklyCostMinor: number;
   currency: string;
@@ -51,6 +53,7 @@ export interface ActiveSessionInfo {
   sessionId: string;
   projectName: string | null;
   lastActivity: string;
+  firstSeen: string;
 }
 
 // --- Type for model context windows extracted from pricing.json ---
@@ -69,7 +72,7 @@ export interface ModelContextWindows {
 
 // --- Internal helpers ---
 
-const FIVE_MINUTES_MS = 5 * 60 * 1000;
+const BURN_RATE_WINDOW_MS = 10 * 60 * 1000;
 const CACHE_FRESH_THRESHOLD_S = 240;   // 4 minutes
 const CACHE_EXPIRING_THRESHOLD_S = 300; // 5 minutes
 
@@ -93,25 +96,26 @@ function sumTokensFromTurns(turns: TurnRecord[]): { input: number; output: numbe
   return { input, output, peak, offpeak };
 }
 
-function computeBurnRate(recentTurns: TurnRecord[], nowMs: number): number | null {
-  if (recentTurns.length === 0) {
-    return null;
+function computeBurnRate(recentTurns: TurnRecord[], nowMs: number): BurnRateState {
+  if (recentTurns.length < 2) {
+    return 'LEARNING';
   }
 
-  const fiveMinAgo = nowMs - FIVE_MINUTES_MS;
-  const turnsInWindow = recentTurns.filter(t => new Date(t.timestamp).getTime() >= fiveMinAgo);
+  const windowStart = nowMs - BURN_RATE_WINDOW_MS;
+  const turnsInWindow = recentTurns.filter(t => new Date(t.timestamp).getTime() >= windowStart);
 
-  if (turnsInWindow.length === 0) {
-    return null;
+  if (turnsInWindow.length < 2) {
+    // Had turns historically but none recent enough
+    return 'STALE';
   }
 
   const earliest = new Date(turnsInWindow[0].timestamp).getTime();
   const elapsedMs = nowMs - earliest;
   const elapsedMinutes = elapsedMs / 60_000;
 
-  // Need at least 5 minutes of data
-  if (elapsedMinutes < 5) {
-    return null;
+  // Need at least 1 minute of spread to avoid wild spikes
+  if (elapsedMinutes < 1) {
+    return 'LEARNING';
   }
 
   let totalTokens = 0;
@@ -124,10 +128,10 @@ function computeBurnRate(recentTurns: TurnRecord[], nowMs: number): number | nul
 
 function computeEstTimeToLimit(
   currentWindowTotal: number,
-  burnRate: number | null,
+  burnRate: BurnRateState,
   personalThreshold: { peakTokens: number; offpeakTokens: number } | null,
 ): number | null {
-  if (personalThreshold === null || burnRate === null || burnRate === 0) {
+  if (personalThreshold === null || typeof burnRate !== 'number' || burnRate === 0) {
     return null;
   }
 
@@ -259,7 +263,9 @@ export function computeContextStats(
   }
 
   const model = lastTurn.model;
-  const estContextUsed = lastTurn.input_tokens;
+  const estContextUsed = lastTurn.input_tokens
+    + lastTurn.cache_creation_input_tokens
+    + lastTurn.cache_read_input_tokens;
 
   let contextMax = 200_000; // default
   if (model && model in modelContextWindows) {
@@ -358,7 +364,9 @@ export function computeStatusBar(
   weeklyTurns: TurnRecord[],
   currency: string,
 ): StatusBarStats {
-  const contextUsed = lastTurn ? lastTurn.input_tokens : 0;
+  const contextUsed = lastTurn
+    ? lastTurn.input_tokens + lastTurn.cache_creation_input_tokens + lastTurn.cache_read_input_tokens
+    : 0;
 
   let contextMax = 200_000;
   if (lastTurn?.model && lastTurn.model in modelContextWindows) {
@@ -394,5 +402,6 @@ export function toActiveSessionInfoList(sessions: SessionRecord[]): ActiveSessio
     sessionId: s.session_id,
     projectName: s.project_name,
     lastActivity: s.last_activity_at,
+    firstSeen: s.first_seen_at,
   }));
 }

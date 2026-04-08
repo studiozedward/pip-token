@@ -1,5 +1,5 @@
 import { router } from './router';
-import { onExtensionMessage } from '../messageBus';
+import { onExtensionMessage, sendToExtension } from '../messageBus';
 import { updateLiveSession } from './pages/liveSession';
 import { updateLiveContext } from './pages/liveContext';
 import { updateLiveCache } from './pages/liveCache';
@@ -10,9 +10,11 @@ import { updateHistoryMonth } from './pages/historyMonth';
 import { updateHistoryQuarter } from './pages/historyQuarter';
 import { updateHistoryYear } from './pages/historyYear';
 import { updateTips } from './pages/tips';
+
 import { updateAboutInfo } from './pages/aboutInfo';
 import { updateStatusBarData } from './components/statusBar';
 import { setSoundEnabled } from './components/blipSound';
+import { setFlickerEnabled } from './router';
 
 // Local interface to narrow the payload without using `any`
 interface StatusBarData {
@@ -55,8 +57,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle settingsChanged — update aboutInfo if active, and sound toggle
     if (message.type === 'settingsChanged') {
       const payload = message.payload as SettingsChangedPayload;
-      if (payload.settings.sound_enabled !== undefined) {
-        setSoundEnabled(payload.settings.sound_enabled !== 'false');
+      if (payload.settings.blip_sound !== undefined) {
+        setSoundEnabled(payload.settings.blip_sound === 'on');
+      }
+      if (payload.settings.crt_flicker !== undefined) {
+        setFlickerEnabled(payload.settings.crt_flicker !== 'off');
       }
       // If onboarding just completed, navigate to LIVE
       if (payload.settings.onboarding_completed_at && !router.currentPageKey) {
@@ -65,6 +70,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (router.currentPageKey === 'about.info') {
         updateAboutInfo({ pageId: 'about.info', settings: payload.settings });
+      }
+      // Currency or plan tier changes affect cost data — re-fetch current page
+      if (payload.settings.currency !== undefined || payload.settings.plan_tier !== undefined) {
+        if (router.currentPageKey) {
+          sendToExtension({ type: 'requestPageData', payload: { pageId: router.currentPageKey } });
+        }
       }
       return;
     }
@@ -88,8 +99,19 @@ document.addEventListener('DOMContentLoaded', () => {
         case 'history.month': updateHistoryMonth(payload); break;
         case 'history.quarter': updateHistoryQuarter(payload); break;
         case 'history.year': updateHistoryYear(payload); break;
-        case 'tips': updateTips(payload); break;
-        case 'about.info': updateAboutInfo(payload as unknown as Parameters<typeof updateAboutInfo>[0]); break;
+        case 'tips.cache':
+        case 'tips.peak-hours':
+        case 'tips.context':
+        case 'tips.other': updateTips(payload); break;
+        case 'about.info': {
+          updateAboutInfo(payload as unknown as Parameters<typeof updateAboutInfo>[0]);
+          const settings = (payload as PageDataPayload).settings;
+          if (settings) {
+            if (settings.blip_sound !== undefined) setSoundEnabled(settings.blip_sound === 'on');
+            if (settings.crt_flicker !== undefined) setFlickerEnabled(settings.crt_flicker !== 'off');
+          }
+          break;
+        }
         // about.glossary is static — no update function needed
       }
     }

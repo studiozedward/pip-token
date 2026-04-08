@@ -9,6 +9,7 @@ import { getCurrentWindow } from '../data/repositories/windowRepo';
 import {
   getRecentTurns,
   getLastTurnForSession,
+  getLastTurn,
   getSessionTurns,
   getTurnsForSessionToday,
   getTurnsBetween,
@@ -152,10 +153,10 @@ function buildSessionPage(projectFilter: string | undefined): unknown {
     stats = computeSessionStats(window, recentTurns, activeSessions, personalThreshold);
   }
 
-  // Status bar is always account-wide
-  const lastTurnForBar = recentTurns.length > 0 ? recentTurns[recentTurns.length - 1] : undefined;
+  // Status bar is always account-wide — use the absolute last turn for context fill
+  const lastTurnForBar = getLastTurn();
   const weeklyTurns = getRecentTurns(hoursAgo(168)); // 7 days
-  const currency = getDefaultCurrency();
+  const currency = getSetting('currency') ?? getDefaultCurrency();
   const statusBar = computeStatusBar(
     window,
     isPeak(new Date()),
@@ -195,16 +196,17 @@ function buildContextPage(projectFilter: string | undefined): unknown {
 
   // Context page needs a specific session's last turn
   const targetSession = projectFilter ?? (activeSessions.length > 0 ? activeSessions[0].session_id : undefined);
-  const lastTurn = targetSession ? getLastTurnForSession(targetSession) : undefined;
+  let lastTurn = targetSession ? getLastTurnForSession(targetSession) : undefined;
+  // Fallback to absolute last turn if session-specific lookup fails
+  if (!lastTurn) lastTurn = getLastTurn();
 
   const stats = computeContextStats(lastTurn, modelContextWindows);
 
   // Status bar
   const window = getCurrentWindow();
-  const recentTurns = getRecentTurns(hoursAgo(1));
-  const lastTurnForBar = recentTurns.length > 0 ? recentTurns[recentTurns.length - 1] : undefined;
+  const lastTurnForBar = getLastTurn();
   const weeklyTurns = getRecentTurns(hoursAgo(168));
-  const currency = getDefaultCurrency();
+  const currency = getSetting('currency') ?? getDefaultCurrency();
   const statusBar = computeStatusBar(
     window,
     isPeak(new Date()),
@@ -248,10 +250,9 @@ function buildCachePage(projectFilter: string | undefined): unknown {
 
   // Status bar
   const window = getCurrentWindow();
-  const recentTurns = getRecentTurns(hoursAgo(1));
-  const lastTurnForBar = recentTurns.length > 0 ? recentTurns[recentTurns.length - 1] : undefined;
+  const lastTurnForBar = getLastTurn();
   const weeklyTurns = getRecentTurns(hoursAgo(168));
-  const currency = getDefaultCurrency();
+  const currency = getSetting('currency') ?? getDefaultCurrency();
   const statusBar = computeStatusBar(
     window,
     isPeak(new Date()),
@@ -292,10 +293,9 @@ function buildCachePage(projectFilter: string | undefined): unknown {
 /** Shared status bar computation, reused across all pages. */
 function buildStatusBar(): unknown {
   const window = getCurrentWindow();
-  const recentTurns = getRecentTurns(hoursAgo(1));
-  const lastTurnForBar = recentTurns.length > 0 ? recentTurns[recentTurns.length - 1] : undefined;
+  const lastTurnForBar = getLastTurn();
   const weeklyTurns = getRecentTurns(hoursAgo(168));
-  const currency = getDefaultCurrency();
+  const currency = getSetting('currency') ?? getDefaultCurrency();
   return computeStatusBar(
     window,
     isPeak(new Date()),
@@ -321,7 +321,7 @@ function buildStatsPage(pageId: string, periodOffset: number): unknown {
   const statusBar = buildStatusBar();
 
   if (STATS_COST_PAGES.has(pageId)) {
-    const currency = getDefaultCurrency();
+    const currency = getSetting('currency') ?? getDefaultCurrency();
     const result = aggregateCostByDay(turns, limitHits, start, end, currency);
     return {
       type: 'pageData',
@@ -456,10 +456,10 @@ function handleManualLimitHit(): unknown | null {
       timestamp: new Date().toISOString(),
       window_id: window ? window.window_id : null,
       detection_method: 'manual',
-      peak_input_tokens: 0,
-      peak_output_tokens: 0,
-      offpeak_input_tokens: 0,
-      offpeak_output_tokens: 0,
+      peak_input_tokens: window?.peak_input_tokens ?? 0,
+      peak_output_tokens: window?.peak_output_tokens ?? 0,
+      offpeak_input_tokens: window?.offpeak_input_tokens ?? 0,
+      offpeak_output_tokens: window?.offpeak_output_tokens ?? 0,
       notes: null,
     });
 
@@ -577,6 +577,24 @@ function handleResetHistory(): unknown | null {
   }
 }
 
+// Callback for triggering a full JSONL rescan — set by extension.ts
+let resyncCallback: (() => void) | null = null;
+
+export function setResyncHandler(fn: () => void): void {
+  resyncCallback = fn;
+}
+
+function handleResyncData(): unknown | null {
+  try {
+    resetAllData();
+    resyncCallback?.();
+    return buildAboutInfoPage();
+  } catch (err) {
+    logger.error('Error resyncing data', err);
+    return null;
+  }
+}
+
 /** Build the about.info page payload. */
 function buildAboutInfoPage(): unknown {
   const settings = getAllSettings();
@@ -612,8 +630,8 @@ function buildAboutInfoPage(): unknown {
         plan_tier: settings['plan_tier'] ?? 'pro',
         currency,
         timezone,
-        sound_enabled: settings['sound_enabled'] ?? 'true',
-        flicker_enabled: settings['flicker_enabled'] ?? 'true',
+        blip_sound: settings['blip_sound'] ?? 'on',
+        crt_flicker: settings['crt_flicker'] ?? 'on',
       },
       info: {
         version: __APP_VERSION__,
@@ -668,6 +686,10 @@ export function handleWebviewMessage(message: WebviewMessage): unknown | null {
       return handleResetHistory();
     }
 
+    if (message.type === 'resyncData') {
+      return handleResyncData();
+    }
+
     if (message.type !== 'requestPageData') {
       return null;
     }
@@ -701,7 +723,10 @@ export function handleWebviewMessage(message: WebviewMessage): unknown | null {
         return buildStatsPage(pageId, periodOffset);
       case 'about.info':
         return buildAboutInfoPage();
-      case 'tips':
+      case 'tips.cache':
+      case 'tips.peak-hours':
+      case 'tips.context':
+      case 'tips.other':
       case 'about.glossary':
         return buildStaticPage(pageId);
       default:

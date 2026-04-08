@@ -7,12 +7,20 @@ import { renderHistoryWeek } from './pages/historyWeek';
 import { renderHistoryMonth } from './pages/historyMonth';
 import { renderHistoryQuarter } from './pages/historyQuarter';
 import { renderHistoryYear } from './pages/historyYear';
-import { renderTips } from './pages/tips';
+import { renderTipsCache, renderTipsPeakHours, renderTipsContext, renderTipsOther } from './pages/tips';
 import { renderAboutInfo } from './pages/aboutInfo';
 import { renderAboutGlossary } from './pages/aboutGlossary';
 import { renderOnboarding } from './pages/onboarding';
 import { renderStatusBar } from './components/statusBar';
 import { playBlip } from './components/blipSound';
+import { setCrtFlickerEnabled, initCrtFlicker } from './components/crtFlicker';
+
+let flickerEnabled = true;
+
+export function setFlickerEnabled(enabled: boolean): void {
+  flickerEnabled = enabled;
+  setCrtFlickerEnabled(enabled);
+}
 
 interface NavConfig {
   sections: {
@@ -54,7 +62,12 @@ const NAV_CONFIG: NavConfig = {
     {
       id: 'tips',
       label: 'TIPS',
-      subPages: [],
+      subPages: [
+        { id: 'cache', label: 'CACHE' },
+        { id: 'peak-hours', label: 'PEAK HOURS' },
+        { id: 'context', label: 'CONTEXT' },
+        { id: 'other', label: 'OTHER' },
+      ],
     },
     {
       id: 'about',
@@ -79,7 +92,10 @@ const PAGE_RENDERERS: Record<string, PageRenderer> = {
   'history.month': renderHistoryMonth,
   'history.quarter': renderHistoryQuarter,
   'history.year': renderHistoryYear,
-  'tips': renderTips,
+  'tips.cache': renderTipsCache,
+  'tips.peak-hours': renderTipsPeakHours,
+  'tips.context': renderTipsContext,
+  'tips.other': renderTipsOther,
   'about.info': renderAboutInfo,
   'about.glossary': renderAboutGlossary,
 };
@@ -98,6 +114,7 @@ class Router {
 
   init(app: HTMLElement) {
     this.app = app;
+    initCrtFlicker();
   }
 
   showOnboarding() {
@@ -124,12 +141,14 @@ class Router {
     this.currentSection = section;
     this.currentSubPage = resolvedSubPage;
 
-    // CRT flicker effect
-    this.app.classList.add('crt-flicker');
+    // CRT flicker effect (respects user setting)
+    if (flickerEnabled) {
+      this.app.classList.add('crt-flicker');
+      setTimeout(() => {
+        this.app?.classList.remove('crt-flicker');
+      }, 80);
+    }
     playBlip();
-    setTimeout(() => {
-      this.app?.classList.remove('crt-flicker');
-    }, 80);
 
     this.render();
   }
@@ -147,7 +166,7 @@ class Router {
     // Title bar
     const titlebar = document.createElement('div');
     titlebar.className = 'titlebar';
-    titlebar.innerHTML = `<span>\u2699 PIP-TOKEN v0.1</span><span>[${this.currentSection.toUpperCase()}]</span>`;
+    titlebar.innerHTML = `<span>\u2699 PIP-TOKEN v${__APP_VERSION__}</span><span>[${this.currentSection.toUpperCase()}]</span>`;
     this.app.appendChild(titlebar);
 
     // Top nav

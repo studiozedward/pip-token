@@ -4,7 +4,7 @@ interface StatusBarData {
   isPeak: boolean;
   contextUsed: number;
   contextMax: number;
-  burnRate: number | null;
+  burnRate: number | 'LEARNING' | 'STALE';
   weeklyTokens: number;
   weeklyCostMinor: number;
   currency: string;
@@ -83,7 +83,7 @@ function renderStatusBarContent(container: HTMLElement): void {
   const peakLabel = statusData.isPeak ? 'PEAK' : 'OFF-PEAK';
   const ctxUsed = formatCompact(statusData.contextUsed);
   const ctxMax = formatCompact(statusData.contextMax);
-  const burn = statusData.burnRate !== null ? formatBurnRate(statusData.burnRate) : '--';
+  const burn = typeof statusData.burnRate === 'number' ? formatBurnRate(statusData.burnRate) : '--';
   const wkCost = formatCostMinor(statusData.weeklyCostMinor, statusData.currency);
 
   container.innerHTML = `

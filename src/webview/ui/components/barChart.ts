@@ -200,22 +200,12 @@ export function renderBarChart(container: HTMLElement, options: BarChartOptions)
     if (bar.limitHits > 0) {
       const markerBaseY = barBottom - totalHeight - 3;
 
-      if (bar.limitHits <= 5) {
-        // Small red rectangles stacked vertically
-        for (let j = 0; j < bar.limitHits; j++) {
-          const rectY = markerBaseY - (j * 4);
-          parts.push(
-            `<rect x="${labelX - 1.5}" y="${rectY - 3}" width="3" height="3" fill="${COLORS.limitHit}"/>`
-          );
-        }
-      } else {
-        // Text "!N" for 6+
-        parts.push(
-          `<text x="${labelX}" y="${markerBaseY - 2}" text-anchor="middle" ` +
-          `font-family="'VT323','Courier New',monospace" font-size="8" ` +
-          `fill="${COLORS.limitHit}" font-weight="700">!${bar.limitHits}</text>`
-        );
-      }
+      // Always show "!N" label for any number of limit hits
+      parts.push(
+        `<text x="${labelX}" y="${markerBaseY - 2}" text-anchor="middle" ` +
+        `font-family="'VT323','Courier New',monospace" font-size="8" ` +
+        `fill="${COLORS.limitHit}" font-weight="700">!${bar.limitHits}</text>`
+      );
     }
   }
 

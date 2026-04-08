@@ -81,14 +81,35 @@ export function renderStatsTokens(container: HTMLElement): void {
   // Render cards in learning state
   renderCards();
 
-  // Render limit hit button
+  // Render limit hit button with inline confirm
   const limitArea = container.querySelector('#limit-hit-area') as HTMLElement;
   if (limitArea) {
     const btn = document.createElement('button');
     btn.className = 'limit-hit-btn';
     btn.textContent = '+ LOG LIMIT HIT';
+    let confirmTimer: ReturnType<typeof setTimeout> | null = null;
     btn.addEventListener('click', () => {
-      sendToExtension({ type: 'manualLimitHit' });
+      if (btn.dataset.confirming === 'true') {
+        // Second click — confirm
+        btn.dataset.confirming = '';
+        btn.textContent = '+ LOG LIMIT HIT';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+        if (confirmTimer) clearTimeout(confirmTimer);
+        sendToExtension({ type: 'manualLimitHit' });
+      } else {
+        // First click — ask to confirm
+        btn.dataset.confirming = 'true';
+        btn.textContent = 'CONFIRM?';
+        btn.style.borderColor = 'var(--alarm-red)';
+        btn.style.color = 'var(--alarm-red)';
+        confirmTimer = setTimeout(() => {
+          btn.dataset.confirming = '';
+          btn.textContent = '+ LOG LIMIT HIT';
+          btn.style.borderColor = '';
+          btn.style.color = '';
+        }, 3000);
+      }
     });
     limitArea.appendChild(btn);
   }

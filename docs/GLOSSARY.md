@@ -58,11 +58,10 @@ Used by HISTORY/MONTH (avg per week), HISTORY/QUARTER (avg per month), HISTORY/Y
 ### Week periods (three distinct conventions)
 Pip-Token intentionally uses three different "week" concepts in different places. They look similar but mean different things; don't conflate them:
 
-- **Week-to-date (WTD).** Monday 00:00 in the user's local timezone up to the current moment. Used only by the status bar `WK` cost segment, which answers "how much have I spent *this week* so far?" Resets every Monday at midnight.
-- **Rolling 7 days.** The last 168 hours from now, regardless of calendar. Used by the STATS pages (TOKENS, COST) because STATS answers "what has my recent behaviour looked like?" — a question where today's Wednesday morning is just as informative as last Wednesday morning. Never resets.
-- **Calendar week (Mon–Sun).** A fixed Monday-to-Sunday block. Used by HISTORY/WEEK for navigating through past weeks with the period arrows. The current calendar week view is equivalent to WTD when you're looking at "this week," but HISTORY can step backwards to earlier complete weeks.
+- **Rolling 7 days.** The last 168 hours from now, regardless of calendar. Used by the status bar `WK` cost segment and the STATS pages (TOKENS, COST). Answers "what has my recent behaviour looked like?" Never resets.
+- **Calendar week (Mon–Sun).** A fixed Monday-to-Sunday block. Used by HISTORY/WEEK for navigating through past weeks with the period arrows.
 
-The three concepts are deliberate: status bar = "this week's spend so far," STATS = "recent trend," HISTORY = "archive". If a fourth page ever wants a "week" value, pick one of these three — don't invent a fourth.
+The two concepts are deliberate: status bar + STATS = "recent trend," HISTORY = "archive". If a new page ever wants a "week" value, pick one of these two — don't invent a third.
 
 ---
 
@@ -98,7 +97,7 @@ Estimated tokens the user did not have to pay full price for, thanks to cache hi
 ## Rates and projections
 
 ### Burn rate
-Tokens consumed per minute, calculated over the **rolling last 5 minutes**. Smooths short spikes without lagging real changes. When a session has fewer than 5 minutes of data, burn rate shows the LEARNING state instead of a number.
+Tokens consumed per minute, calculated over the **rolling last 5 minutes**. Smooths short spikes without lagging real changes. Requires at least 2 turns with 1+ minute between them before showing a value; until then, burn rate shows the LEARNING state.
 
 ### Estimated time to limit
 A projection of how long until the user hits their 5-hour session limit, based on:
@@ -112,7 +111,7 @@ When the user has zero historical limit hits, this metric shows the LEARNING sta
 
 ### LEARNING state
 A placeholder string shown in place of a metric value when Pip-Token doesn't yet have enough data to compute it honestly. Canonical variants:
-- `LEARNING — WAIT 5 MINS` for time-based warmups (e.g. burn rate)
+- `LEARNING` for time-based warmups (e.g. burn rate — needs 2+ turns with at least 1 minute between them)
 - `LEARNING — NEEDS LIMIT HIT` for projections that require at least one historical limit hit
 - `LEARNING — NEEDS SYNC` for the OTHER source bucket before the user has ever performed a dashboard sync
 

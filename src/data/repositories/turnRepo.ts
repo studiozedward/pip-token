@@ -56,6 +56,11 @@ export function getLastTurnForSession(sessionId: string): TurnRecord | undefined
   return db.prepare('SELECT * FROM turns WHERE session_id = ? ORDER BY timestamp DESC LIMIT 1').get(sessionId) as TurnRecord | undefined;
 }
 
+export function getLastTurn(): TurnRecord | undefined {
+  const db = getDb();
+  return db.prepare('SELECT * FROM turns ORDER BY timestamp DESC LIMIT 1').get() as TurnRecord | undefined;
+}
+
 export function getSessionTurnsSince(sessionId: string, since: string): TurnRecord[] {
   const db = getDb();
   return db.prepare('SELECT * FROM turns WHERE session_id = ? AND timestamp >= ? ORDER BY timestamp ASC').all(sessionId, since) as unknown as TurnRecord[];

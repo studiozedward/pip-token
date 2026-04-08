@@ -214,8 +214,34 @@ function attachEventListeners(container: HTMLElement): void {
 
   const limitBtn = container.querySelector('#action-limit-hit') as HTMLElement | null;
   if (limitBtn) {
+    let confirmTimer: ReturnType<typeof setTimeout> | null = null;
     limitBtn.addEventListener('click', () => {
-      sendToExtension({ type: 'manualLimitHit' });
+      if (limitBtn.dataset.confirming === 'true') {
+        limitBtn.dataset.confirming = '';
+        limitBtn.textContent = 'LOG LIMIT HIT NOW';
+        limitBtn.style.borderColor = '';
+        limitBtn.style.color = '';
+        if (confirmTimer) clearTimeout(confirmTimer);
+        sendToExtension({ type: 'manualLimitHit' });
+      } else {
+        limitBtn.dataset.confirming = 'true';
+        limitBtn.textContent = 'CONFIRM?';
+        limitBtn.style.borderColor = 'var(--alarm-red)';
+        limitBtn.style.color = 'var(--alarm-red)';
+        confirmTimer = setTimeout(() => {
+          limitBtn.dataset.confirming = '';
+          limitBtn.textContent = 'LOG LIMIT HIT NOW';
+          limitBtn.style.borderColor = '';
+          limitBtn.style.color = '';
+        }, 3000);
+      }
+    });
+  }
+
+  const resyncBtn = container.querySelector('#action-resync') as HTMLElement | null;
+  if (resyncBtn) {
+    resyncBtn.addEventListener('click', () => {
+      showResyncConfirm(container);
     });
   }
 
@@ -227,16 +253,47 @@ function attachEventListeners(container: HTMLElement): void {
   }
 }
 
+function showResyncConfirm(container: HTMLElement): void {
+  const confirmArea = container.querySelector('#reset-confirm') as HTMLElement | null;
+  if (!confirmArea) return;
+
+  confirmArea.innerHTML = `
+    <div class="confirm-box">
+      This will rebuild all data from Claude Code's log files. Manual limit hits will be lost.
+      <div class="sync-buttons">
+        <button class="sync-btn cancel" id="resync-cancel">CANCEL</button>
+        <button class="sync-btn" id="resync-yes">RESYNC</button>
+      </div>
+    </div>
+  `;
+
+  const cancelBtn = confirmArea.querySelector('#resync-cancel') as HTMLElement | null;
+  const yesBtn = confirmArea.querySelector('#resync-yes') as HTMLElement | null;
+
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', () => {
+      confirmArea.innerHTML = '';
+    });
+  }
+
+  if (yesBtn) {
+    yesBtn.addEventListener('click', () => {
+      sendToExtension({ type: 'resyncData' });
+      confirmArea.innerHTML = '';
+    });
+  }
+}
+
 function showResetConfirm(container: HTMLElement): void {
   const confirmArea = container.querySelector('#reset-confirm') as HTMLElement | null;
   if (!confirmArea) return;
 
   confirmArea.innerHTML = `
     <div class="confirm-box">
-      ARE YOU SURE? This will permanently erase all tracked sessions, turns, and limit hits.
+      ARE YOU SURE? This will permanently erase all data with no rebuild.
       <div class="sync-buttons">
         <button class="sync-btn cancel" id="reset-cancel">CANCEL</button>
-        <button class="sync-btn" id="reset-yes" style="border-color: var(--alarm-red); color: var(--alarm-red);">YES, RESET</button>
+        <button class="sync-btn" id="reset-yes" style="border-color: var(--alarm-red); color: var(--alarm-red);">YES, CLEAR</button>
       </div>
     </div>
   `;
@@ -269,7 +326,7 @@ export function renderAboutInfo(container: HTMLElement): void {
 
   container.innerHTML = `
     <div class="page-body">
-      <div style="flex: 1.3;">
+      <div class="about-left">
         <div class="section-title">SETTINGS</div>
         <div class="aboutgrid">
           <div class="aboutgrid-key">PLAN TIER</div>
@@ -287,7 +344,8 @@ export function renderAboutInfo(container: HTMLElement): void {
         <div class="section-title" style="padding-top: 12px;">ACTIONS</div>
         <button class="action-btn" id="action-sync">SYNC WITH DASHBOARD</button>
         <button class="action-btn" id="action-limit-hit">LOG LIMIT HIT NOW</button>
-        <button class="action-btn danger" id="action-reset">RESET HISTORY</button>
+        <button class="action-btn" id="action-resync">RESYNC DATA</button>
+        <button class="action-btn danger" id="action-reset">CLEAR ALL DATA</button>
         <div id="reset-confirm"></div>
 
         <div class="section-title" style="padding-top: 12px;">INFO</div>
@@ -315,7 +373,7 @@ export function renderAboutInfo(container: HTMLElement): void {
 
   const mascotEl = container.querySelector('#mascot-about') as HTMLElement;
   if (mascotEl) {
-    renderMascot(mascotEl, 'about', 'Pip-Token v0.1 \u2014 built in public. No network calls, no telemetry. Everything stays on your machine.');
+    renderMascot(mascotEl, 'about', `Pip-Token v${__APP_VERSION__} \u2014 An open source project by Studio Zedward. Have feedback? Message me on X at @StudioZedward.`);
   }
 
   attachEventListeners(container);

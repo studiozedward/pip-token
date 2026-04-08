@@ -4,6 +4,7 @@ interface SessionInfo {
   sessionId: string;
   projectName: string | null;
   lastActivity: string;
+  firstSeen?: string;
 }
 
 interface ProjectSelectorOptions {
@@ -42,10 +43,24 @@ export function renderProjectSelector(container: HTMLElement, options: ProjectSe
     select.appendChild(allOpt);
   }
 
+  // Detect duplicate project names so we can disambiguate
+  const nameCounts = new Map<string, number>();
+  for (const s of sessions) {
+    const name = s.projectName ?? s.sessionId;
+    nameCounts.set(name, (nameCounts.get(name) ?? 0) + 1);
+  }
+
   for (const session of sessions) {
     const opt = document.createElement('option');
     opt.value = session.sessionId;
-    opt.textContent = session.projectName ?? session.sessionId;
+    const name = session.projectName ?? session.sessionId;
+    const isDuplicate = (nameCounts.get(name) ?? 0) > 1;
+    if (isDuplicate && session.firstSeen) {
+      const time = new Date(session.firstSeen).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      opt.textContent = `${name} (${time})`;
+    } else {
+      opt.textContent = name;
+    }
     if (currentFilter === session.sessionId) opt.selected = true;
     select.appendChild(opt);
   }

@@ -11,7 +11,7 @@ interface SessionStats {
   outputTokens: number;
   peakTokens: number;
   offpeakTokens: number;
-  burnRate: number | null;
+  burnRate: number | 'LEARNING' | 'STALE';
   estTimeToLimit: number | null;
   sessionTime: number;
 }
@@ -76,18 +76,23 @@ const STAT_ROWS: StatRow[] = [
   { label: 'OFF-PEAK TOKENS', format: (s) => formatWithCommas(s.offpeakTokens) },
   {
     label: 'BURN RATE',
-    format: (s) => s.burnRate !== null ? formatBurnRate(s.burnRate) : 'LEARNING \u2014 WAIT 5 MINS',
+    format: (s) => typeof s.burnRate === 'number' ? formatBurnRate(s.burnRate) : s.burnRate,
   },
   {
     label: 'TIME TO LIMIT',
-    format: (s) => s.estTimeToLimit !== null ? `~${formatDuration(s.estTimeToLimit * 60000)}` : 'LEARNING',
+    format: (s) => {
+      if (s.estTimeToLimit !== null) return `~${formatDuration(s.estTimeToLimit * 60000)}`;
+      if (typeof s.burnRate === 'string') return s.burnRate;
+      return 'LEARNING';
+    },
   },
   { label: 'SESSION TIME', format: (s) => formatDuration(s.sessionTime * 1000) },
 ];
 
 // --- Module-level state ---
 
-let selectedStat = 'INPUT TOKENS';
+const DEFAULT_MASCOT_TEXT = 'Click a metric to learn more about it.';
+let selectedStat: string | null = null;
 let currentData: SessionPagePayload | null = null;
 let containerRef: HTMLElement | null = null;
 
@@ -116,12 +121,18 @@ export function renderLiveSession(container: HTMLElement): void {
     div.dataset.stat = row.label;
     div.innerHTML = `<span>${row.label}</span><span class="stat-value learning-state">--</span>`;
 
-    div.addEventListener('click', () => {
+    div.addEventListener('click', (e) => {
+      e.stopPropagation();
       selectStat(row.label);
     });
 
     statlist.appendChild(div);
   }
+
+  // Click outside stat rows deselects and restores default owl
+  container.addEventListener('click', () => {
+    deselectStat();
+  });
 
   // Set initial learning states for special rows
   const burnEl = statlist.querySelector('[data-stat="BURN RATE"] .stat-value') as HTMLElement | null;
@@ -132,7 +143,8 @@ export function renderLiveSession(container: HTMLElement): void {
   // Render mascot with default description
   const mascotEl = container.querySelector('#mascot-live') as HTMLElement;
   if (mascotEl) {
-    renderMascot(mascotEl, 'live', SESSION_STAT_DESCRIPTIONS[selectedStat] ?? '');
+    const desc = selectedStat ? (SESSION_STAT_DESCRIPTIONS[selectedStat] ?? '') : DEFAULT_MASCOT_TEXT;
+    renderMascot(mascotEl, 'live', desc);
   }
 
   // If we already have data (re-render), apply it
@@ -157,16 +169,29 @@ function updateStats(): void {
   const statlist = containerRef.querySelector('#session-statlist');
   if (!statlist) return;
 
+  const isAllProjects = currentData.currentFilter === null;
+
   for (const row of STAT_ROWS) {
-    const el = statlist.querySelector(`[data-stat="${row.label}"] .stat-value`) as HTMLElement | null;
+    const rowEl = statlist.querySelector(`[data-stat="${row.label}"]`) as HTMLElement | null;
+    if (!rowEl) continue;
+
+    // Hide SESSION TIME in ALL PROJECTS view — it's not meaningful for aggregates
+    if (row.label === 'SESSION TIME' && isAllProjects) {
+      rowEl.style.display = 'none';
+      continue;
+    } else if (row.label === 'SESSION TIME') {
+      rowEl.style.display = '';
+    }
+
+    const el = rowEl.querySelector('.stat-value') as HTMLElement | null;
     if (el) {
       const formatted = row.format(stats);
       el.textContent = formatted;
-      // Remove learning-state class if we have real data
-      const isLearning =
-        (row.label === 'BURN RATE' && stats.burnRate === null)
+      // Apply learning-state class for non-numeric placeholder states
+      const isPlaceholder =
+        (row.label === 'BURN RATE' && typeof stats.burnRate === 'string')
         || (row.label === 'TIME TO LIMIT' && stats.estTimeToLimit === null);
-      if (isLearning) {
+      if (isPlaceholder) {
         el.classList.add('learning-state');
       } else {
         el.classList.remove('learning-state');
@@ -210,5 +235,25 @@ function selectStat(label: string): void {
   const mascotEl = containerRef.querySelector('#mascot-live') as HTMLElement;
   if (mascotEl) {
     renderMascot(mascotEl, 'live', SESSION_STAT_DESCRIPTIONS[label] ?? '');
+  }
+}
+
+function deselectStat(): void {
+  selectedStat = null;
+
+  if (!containerRef) return;
+  const statlist = containerRef.querySelector('#session-statlist');
+  if (!statlist) return;
+
+  // Remove active class from all rows
+  const rows = statlist.querySelectorAll('.stat');
+  for (const row of rows) {
+    (row as HTMLElement).classList.remove('active');
+  }
+
+  // Restore default mascot text
+  const mascotEl = containerRef.querySelector('#mascot-live') as HTMLElement;
+  if (mascotEl) {
+    renderMascot(mascotEl, 'live', DEFAULT_MASCOT_TEXT);
   }
 }

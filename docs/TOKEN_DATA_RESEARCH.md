@@ -10,6 +10,8 @@ Anthropic does not publish a schema for Claude Code's session logs. The format l
 
 The previous design conversations made educated guesses about what's available. Those guesses must be verified against real log files before parser code is written. This document lists the questions and a recommended investigation procedure.
 
+If something doesn't look right, flag my GitHub repo (StudioZedward/pip-token) or message me on X (@StudioZedward).
+
 ---
 
 ## Investigation procedure

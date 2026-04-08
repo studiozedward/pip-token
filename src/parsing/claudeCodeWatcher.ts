@@ -52,6 +52,11 @@ export class ClaudeCodeWatcher {
     logger.info('Watcher stopped');
   }
 
+  /** Re-scan all existing JSONL files from their current offsets. */
+  rescan(): void {
+    this.scanExistingFiles();
+  }
+
   private scanExistingFiles(): void {
     try {
       const projectDirs = fs.readdirSync(CLAUDE_PROJECTS_DIR);

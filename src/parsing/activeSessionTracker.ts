@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from '../utils/logger';
+import { extractProjectName } from '../utils/projectName';
 
 export interface ActiveSession {
   sessionId: string;
@@ -63,9 +64,3 @@ export function getActiveSessions(): ActiveSession[] {
   return sessions.sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime());
 }
 
-/** Extract a readable project name from the directory hash format */
-function extractProjectName(dirName: string): string {
-  // Claude Code uses path-based directory names like "-Users-username-Desktop-myproject"
-  const parts = dirName.split('-').filter(Boolean);
-  return parts[parts.length - 1] ?? dirName;
-}
