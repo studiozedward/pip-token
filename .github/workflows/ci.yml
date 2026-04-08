@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - run: npm test
+
+      - name: Check fixture sanitisation
+        run: |
+          if grep -rEn '/Users/|/home/|C:\\Users\\|sk-ant-|Bearer [A-Za-z0-9_-]{20,}' test/fixtures/ 2>/dev/null; then
+            echo "Unsanitised patterns found in test/fixtures/. See test/CLAUDE.md."
+            exit 1
+          fi

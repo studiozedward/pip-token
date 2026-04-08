@@ -1,0 +1,10 @@
+# Exclude everything, then whitelist what we need
+**
+
+# Include the essentials
+!out/**
+!assets/*.png
+!package.json
+!README.md
+!CHANGELOG.md
+!LICENSE

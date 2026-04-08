@@ -1,0 +1,38 @@
+{
+  "snapshot_date": "2026-04-08",
+  "source": "https://docs.anthropic.com/en/docs/about-claude/models",
+  "models": {
+    "claude-opus-4-6": {
+      "input_per_million": 15.00,
+      "output_per_million": 75.00,
+      "cache_write_per_million": 18.75,
+      "cache_read_per_million": 1.50,
+      "context_window": 200000
+    },
+    "claude-sonnet-4-6": {
+      "input_per_million": 3.00,
+      "output_per_million": 15.00,
+      "cache_write_per_million": 3.75,
+      "cache_read_per_million": 0.30,
+      "context_window": 200000
+    },
+    "claude-haiku-4-5": {
+      "input_per_million": 0.80,
+      "output_per_million": 4.00,
+      "cache_write_per_million": 1.00,
+      "cache_read_per_million": 0.08,
+      "context_window": 200000
+    }
+  },
+  "currency": {
+    "base": "USD",
+    "rates": {
+      "USD": 1.0,
+      "GBP": 0.79,
+      "EUR": 0.92,
+      "CAD": 1.37,
+      "AUD": 1.53,
+      "JPY": 149.50
+    }
+  }
+}

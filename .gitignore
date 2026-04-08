@@ -1,0 +1,18 @@
+node_modules/
+out/
+*.vsix
+.DS_Store
+.env
+.env.*
+.claude/
+.git-backup/
+coverage/
+*.log
+.vscode-test/
+
+# Generated at build time from docs/GLOSSARY.md — see ARCHITECTURE §"Build-time asset baking"
+src/webview/ui/pages/glossaryContent.ts
+
+# Parser fixtures: gitignored by default, explicit allowlist for sanitised files
+test/fixtures/sample-sessions/*
+!test/fixtures/sample-sessions/*-sanitised.jsonl
