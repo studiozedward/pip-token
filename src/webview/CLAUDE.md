@@ -22,9 +22,19 @@ The webview is plain HTML/CSS/TypeScript — no React, no Vue, no Tailwind. Stat
 ## Charts and effects
 
 - Charts are inline SVG, hand-rolled — don't import a chart library
-- CRT flicker is a CSS animation, ~80ms, on the page container
+- Chart tooltips use transparent SVG hit-area rects with `data-*` attributes; the tooltip div is positioned via JS mousemove. Values are stored as floats — always use `parseFloat`, never `parseInt`, when reading them back.
+- Chart legends render below the SVG inside the `.chart-area` container (which uses `flex-direction: column`)
+- CRT flicker is a CSS animation, ~80ms, on the page container. The toggle is deferred to post-v0.1; flicker is always on.
 - Blip sound uses Web Audio API synthesis (no audio files)
 - The webview survives VS Code reloads (`retainContextWhenHidden: true`) — see ADR 0020
+
+## Custom dropdowns
+
+The session/project selector uses a custom `.pip-select` dropdown (not a native `<select>`) so the dropdown menu matches the Pip-Boy aesthetic. Native `<select>` dropdowns are OS-rendered and cannot be styled inside a VS Code webview. The settings dropdowns on the about/onboarding pages still use native `<select>` (small fixed option lists where it matters less).
+
+## Sync indicator
+
+When a data resync is triggered, `setSyncing(true)` (from `statusBar.ts`) makes the status bar show a blinking "RESYNCING DATA" message on every page. It auto-clears when the next `updateStatusBarData()` call arrives with fresh data. Any new resync-like operation should call `setSyncing(true)` before sending its message.
 
 ## Settings changes and data refresh
 

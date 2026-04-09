@@ -56,9 +56,17 @@ function formatCostMinor(minorUnits: number, currency: string): string {
 // --- Module-level state ---
 
 let statusData: StatusBarData | null = null;
+let syncing = false;
+
+export function setSyncing(value: boolean): void {
+  syncing = value;
+  const el = document.querySelector('.statusbar');
+  if (el) renderStatusBarContent(el as HTMLElement);
+}
 
 export function updateStatusBarData(data: StatusBarData): void {
   statusData = data;
+  syncing = false;
   const el = document.querySelector('.statusbar');
   if (el) renderStatusBarContent(el as HTMLElement);
 }
@@ -69,6 +77,11 @@ export function renderStatusBar(container: HTMLElement): void {
 }
 
 function renderStatusBarContent(container: HTMLElement): void {
+  if (syncing) {
+    container.innerHTML = `<div class="statusbar-sync">\u00BB RESYNCING DATA \u00AB</div>`;
+    return;
+  }
+
   if (!statusData) {
     container.innerHTML = `
       <div class="statusbar-segment">--</div>

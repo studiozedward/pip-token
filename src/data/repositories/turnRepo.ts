@@ -76,6 +76,15 @@ export function getTurnsBetween(start: string, end: string): TurnRecord[] {
   return db.prepare('SELECT * FROM turns WHERE timestamp >= ? AND timestamp < ? ORDER BY timestamp ASC').all(start, end) as unknown as TurnRecord[];
 }
 
+export function getTurnsForSessions(sessionIds: string[]): TurnRecord[] {
+  if (sessionIds.length === 0) return [];
+  const db = getDb();
+  const placeholders = sessionIds.map(() => '?').join(', ');
+  return db.prepare(
+    `SELECT * FROM turns WHERE session_id IN (${placeholders}) ORDER BY timestamp ASC`
+  ).all(...sessionIds) as unknown as TurnRecord[];
+}
+
 export function getTurnCount(): number {
   const db = getDb();
   const row = db.prepare('SELECT COUNT(*) as count FROM turns').get() as { count: number };

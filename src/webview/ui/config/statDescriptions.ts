@@ -1,6 +1,6 @@
 export const SESSION_STAT_DESCRIPTIONS: Record<string, string> = {
-  'INPUT TOKENS': 'Input tokens are sent TO Claude: your prompts, file contents, and conversation history. Large codebases re-read each turn drive this up fast.',
-  'OUTPUT TOKENS': 'Output tokens come FROM Claude: the responses you read. Typically much fewer than input.',
+  'INPUT TOKENS': 'Input tokens are sent TO Claude: your prompts, file contents, and conversation history. Large codebases re-read each turn, driving this up fast.',
+  'OUTPUT TOKENS': 'Output tokens come FROM Claude: the responses you read.',
   'PEAK TOKENS': 'Peak hours are weekdays 5–11 AM Pacific. Tokens here count separately toward your rate limit.',
   'OFF-PEAK TOKENS': 'Off-peak tokens are everything outside weekday 5–11 AM Pacific. You get more before hitting limits.',
   'BURN RATE': 'Tokens consumed per minute, averaged over the last 10 minutes. Shows LEARNING until enough data, or STALE if no recent activity.',

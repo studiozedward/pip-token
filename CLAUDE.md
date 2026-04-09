@@ -35,6 +35,10 @@ TypeScript, VS Code Extension API, SQLite (better-sqlite3), plain HTML/CSS in th
 
 Pip-Token uses a distributed CLAUDE.md pattern. When working in `src/parsing/`, `src/webview/`, `src/data/`, `src/domain/`, or `test/`, also read the local `CLAUDE.md` in that directory — it contains conventions specific to that subsystem.
 
+## Session identity
+
+A "session" in Pip-Token maps 1:1 to a Claude Code `sessionId`. Clearing context in Claude Code starts a new session with a new ID — this is intentional, not a bug. Context window utilisation and cache state are per-session and cannot be meaningfully merged across sessions. The "All Projects" aggregate on LIVE/SESSION sums token counts from the turns table across all active sessions (not from window counters, which break across rate-limit boundaries and resyncs).
+
 ## Hard rules
 
 - **v1 makes no network calls. Anywhere.** Don't add any network code, even libraries that imply network capability. Telemetry and update checks are strictly v2+ territory and would need their own ADR superseding 0004.

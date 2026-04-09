@@ -11,6 +11,7 @@ import {
   getLastTurnForSession,
   getLastTurn,
   getSessionTurns,
+  getTurnsForSessions,
   getTurnsForSessionToday,
   getTurnsBetween,
   getTurnCount,
@@ -149,8 +150,10 @@ function buildSessionPage(projectFilter: string | undefined): unknown {
     const sessionRecentTurns = recentTurns.filter(t => t.session_id === projectFilter);
     stats = computeSessionStatsFiltered(turns, sessionRecentTurns, personalThreshold);
   } else {
-    // All sessions
-    stats = computeSessionStats(window, recentTurns, activeSessions, personalThreshold);
+    // All sessions — sum from turns so totals survive resync and rate-limit window resets
+    const sessionIds = activeSessions.map(s => s.session_id);
+    const activeSessionTurns = getTurnsForSessions(sessionIds);
+    stats = computeSessionStats(activeSessionTurns, recentTurns, activeSessions, personalThreshold);
   }
 
   // Status bar is always account-wide — use the absolute last turn for context fill
@@ -631,7 +634,6 @@ function buildAboutInfoPage(): unknown {
         currency,
         timezone,
         blip_sound: settings['blip_sound'] ?? 'on',
-        crt_flicker: settings['crt_flicker'] ?? 'on',
       },
       info: {
         version: __APP_VERSION__,

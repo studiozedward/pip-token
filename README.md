@@ -89,6 +89,8 @@ For the full design rationale and honest acknowledgements of what we cannot meas
 
 ### Post-v0.1 candidates
 
+- CRT flicker toggle (on/off control for the screen effect)
+- Model insights (usage breakdown by model, cost comparisons)
 - Optional anonymous community data sharing for cold-start estimates
 - CSV export
 

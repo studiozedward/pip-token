@@ -223,12 +223,98 @@ export function renderBarChart(container: HTMLElement, options: BarChartOptions)
     );
   }
 
-  // Assemble SVG
+  // Hit areas (transparent overlays for tooltip interaction, rendered last so on top)
+  for (let i = 0; i < barCount; i++) {
+    const bar = bars[i];
+    const x = MARGIN_LEFT + (gapWidth / 2) + i * (barWidth + gapWidth);
+    parts.push(
+      `<rect class="chart-hit-area" x="${x}" y="${MARGIN_TOP}" width="${barWidth}" height="${CHART_H}" ` +
+      `fill="transparent" style="cursor:pointer" ` +
+      `data-label="${escapeXml(bar.label)}" ` +
+      `data-peak="${bar.peakValue}" data-offpeak="${bar.offpeakValue}" ` +
+      `data-total="${bar.peakValue + bar.offpeakValue}" ` +
+      `data-hits="${bar.limitHits}"/>`
+    );
+  }
+
+  // Assemble SVG + legend + tooltip
   container.innerHTML = `
     <div class="chart-svg-container">
       <svg viewBox="0 0 ${VIEW_W} ${VIEW_H}" xmlns="http://www.w3.org/2000/svg">
         ${parts.join('\n        ')}
       </svg>
+      <div class="chart-tooltip"></div>
+    </div>
+    <div class="chart-legend">
+      <span class="chart-legend-item"><span class="chart-legend-swatch chart-legend-peak"></span> PEAK</span>
+      <span class="chart-legend-item"><span class="chart-legend-swatch chart-legend-offpeak"></span> OFF-PEAK</span>
+      <span class="chart-legend-item"><span class="chart-legend-swatch chart-legend-limit"></span> LIMIT HITS</span>
     </div>
   `;
+
+  // Wire up tooltip interaction
+  attachTooltipListeners(container, formatY);
+}
+
+// --- Tooltip event wiring ---
+
+function attachTooltipListeners(
+  container: HTMLElement,
+  formatValue: (n: number) => string
+): void {
+  const svgContainer = container.querySelector('.chart-svg-container') as HTMLElement | null;
+  const tooltip = container.querySelector('.chart-tooltip') as HTMLElement | null;
+  const hitAreas = container.querySelectorAll('.chart-hit-area');
+
+  if (!svgContainer || !tooltip || hitAreas.length === 0) return;
+
+  // Capture narrowed references for closures
+  const tipEl = tooltip;
+  const wrapEl = svgContainer;
+
+  function positionTip(e: MouseEvent): void {
+    const bounds = wrapEl.getBoundingClientRect();
+    let left = e.clientX - bounds.left + 12;
+    const top = e.clientY - bounds.top - 8;
+
+    // Flip to left side if it would overflow the container
+    const tipWidth = tipEl.offsetWidth;
+    if (left + tipWidth > bounds.width) {
+      left = e.clientX - bounds.left - tipWidth - 12;
+    }
+
+    tipEl.style.left = `${left}px`;
+    tipEl.style.top = `${top}px`;
+  }
+
+  hitAreas.forEach(area => {
+    area.addEventListener('mouseenter', (e: Event) => {
+      const el = area as SVGRectElement;
+      const label = el.dataset.label ?? '';
+      const peak = parseFloat(el.dataset.peak ?? '0');
+      const offpeak = parseFloat(el.dataset.offpeak ?? '0');
+      const total = parseFloat(el.dataset.total ?? '0');
+      const hits = parseInt(el.dataset.hits ?? '0', 10);
+
+      let html = `<strong>${escapeXml(label)}</strong><br>`;
+      html += `TOTAL: ${formatValue(total)}<br>`;
+      html += `PEAK: ${formatValue(peak)}<br>`;
+      html += `OFF-PEAK: ${formatValue(offpeak)}`;
+      if (hits > 0) {
+        html += `<br><span class="chart-tooltip-hits">LIMIT HITS: ${hits}</span>`;
+      }
+
+      tipEl.innerHTML = html;
+      tipEl.style.display = 'block';
+      positionTip(e as MouseEvent);
+    });
+
+    area.addEventListener('mousemove', (e: Event) => {
+      positionTip(e as MouseEvent);
+    });
+
+    area.addEventListener('mouseleave', () => {
+      tipEl.style.display = 'none';
+    });
+  });
 }

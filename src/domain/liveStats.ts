@@ -174,38 +174,28 @@ function computeSessionTimeSeconds(activeSessions: SessionRecord[]): number {
 
 /**
  * Compute stats for the Session page when no project filter is applied (ALL sessions).
- * Uses window-level aggregates for token sums.
+ * Sums from turn-level data across all active sessions so totals survive resync
+ * and are not affected by rate-limit window boundaries.
  */
 export function computeSessionStats(
-  window: WindowRecord | undefined,
+  activeSessionTurns: TurnRecord[],
   recentTurns: TurnRecord[],
   activeSessions: SessionRecord[],
   personalThreshold: { peakTokens: number; offpeakTokens: number } | null,
 ): SessionPageStats {
-  const inputTokens = window
-    ? window.peak_input_tokens + window.offpeak_input_tokens
-    : 0;
-  const outputTokens = window
-    ? window.peak_output_tokens + window.offpeak_output_tokens
-    : 0;
-  const peakTokens = window
-    ? window.peak_input_tokens + window.peak_output_tokens
-    : 0;
-  const offpeakTokens = window
-    ? window.offpeak_input_tokens + window.offpeak_output_tokens
-    : 0;
+  const sums = sumTokensFromTurns(activeSessionTurns);
 
   const nowMs = Date.now();
   const burnRate = computeBurnRate(recentTurns, nowMs);
-  const currentWindowTotal = inputTokens + outputTokens;
-  const estTimeToLimit = computeEstTimeToLimit(currentWindowTotal, burnRate, personalThreshold);
+  const currentTotal = sums.input + sums.output;
+  const estTimeToLimit = computeEstTimeToLimit(currentTotal, burnRate, personalThreshold);
   const sessionTime = computeSessionTimeSeconds(activeSessions);
 
   return {
-    inputTokens,
-    outputTokens,
-    peakTokens,
-    offpeakTokens,
+    inputTokens: sums.input,
+    outputTokens: sums.output,
+    peakTokens: sums.peak,
+    offpeakTokens: sums.offpeak,
     burnRate,
     estTimeToLimit,
     sessionTime,

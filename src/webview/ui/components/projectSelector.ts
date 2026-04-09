@@ -14,69 +14,145 @@ interface ProjectSelectorOptions {
   pageId: string;
 }
 
+interface SelectItem {
+  value: string;
+  label: string;
+}
+
+function formatSessionLabel(session: SessionInfo): string {
+  const name = session.projectName ?? session.sessionId;
+  if (session.firstSeen) {
+    const d = new Date(session.firstSeen);
+    const date = d.toLocaleDateString([], { day: 'numeric', month: 'short' });
+    const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    return `${name} (${date}, ${time})`;
+  }
+  return name;
+}
+
 export function renderProjectSelector(container: HTMLElement, options: ProjectSelectorOptions): void {
   const { sessions, currentFilter, allowAll, pageId } = options;
 
   // Clear existing selector if present
-  const existing = container.querySelector('.project-selector');
+  const existing = container.querySelector('.pip-select');
   if (existing) existing.remove();
 
-  const select = document.createElement('select');
-  select.className = 'project-selector';
+  // Build items list
+  const items: SelectItem[] = [];
 
   if (sessions.length === 0) {
-    const opt = document.createElement('option');
-    opt.textContent = 'NO ACTIVE SESSIONS';
-    opt.disabled = true;
-    opt.selected = true;
-    select.appendChild(opt);
-    select.disabled = true;
-    container.prepend(select);
+    renderDisabled(container, 'NO ACTIVE SESSIONS');
     return;
   }
 
   if (allowAll) {
-    const allOpt = document.createElement('option');
-    allOpt.value = '';
-    allOpt.textContent = 'ALL PROJECTS';
-    if (currentFilter === null) allOpt.selected = true;
-    select.appendChild(allOpt);
-  }
-
-  // Detect duplicate project names so we can disambiguate
-  const nameCounts = new Map<string, number>();
-  for (const s of sessions) {
-    const name = s.projectName ?? s.sessionId;
-    nameCounts.set(name, (nameCounts.get(name) ?? 0) + 1);
+    items.push({ value: '', label: 'ALL PROJECTS' });
   }
 
   for (const session of sessions) {
-    const opt = document.createElement('option');
-    opt.value = session.sessionId;
-    const name = session.projectName ?? session.sessionId;
-    const isDuplicate = (nameCounts.get(name) ?? 0) > 1;
-    if (isDuplicate && session.firstSeen) {
-      const time = new Date(session.firstSeen).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-      opt.textContent = `${name} (${time})`;
-    } else {
-      opt.textContent = name;
-    }
-    if (currentFilter === session.sessionId) opt.selected = true;
-    select.appendChild(opt);
+    items.push({ value: session.sessionId, label: formatSessionLabel(session) });
   }
 
-  // If not allowAll and no currentFilter, select the first session
-  if (!allowAll && currentFilter === null && sessions.length > 0) {
-    select.value = sessions[0].sessionId;
+  // Determine which item is selected
+  let selectedValue: string;
+  if (currentFilter !== null) {
+    selectedValue = currentFilter;
+  } else if (allowAll) {
+    selectedValue = '';
+  } else if (sessions.length > 0) {
+    selectedValue = sessions[0].sessionId;
+  } else {
+    selectedValue = '';
   }
 
-  select.addEventListener('change', () => {
-    const value = select.value;
+  const selectedItem = items.find(i => i.value === selectedValue) ?? items[0];
+
+  // Build DOM
+  const wrapper = document.createElement('div');
+  wrapper.className = 'pip-select';
+
+  const trigger = document.createElement('button');
+  trigger.className = 'pip-select-trigger';
+  trigger.innerHTML = `<span class="pip-select-label">${escapeHtml(selectedItem.label)}</span><span class="pip-select-arrow">\u25BC</span>`;
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'pip-select-dropdown';
+
+  for (const item of items) {
+    const opt = document.createElement('div');
+    opt.className = 'pip-select-option' + (item.value === selectedValue ? ' selected' : '');
+    opt.dataset.value = item.value;
+    opt.textContent = item.label;
+    dropdown.appendChild(opt);
+  }
+
+  wrapper.appendChild(trigger);
+  wrapper.appendChild(dropdown);
+
+  // --- Event handling ---
+
+  function closeDropdown(): void {
+    wrapper.classList.remove('open');
+  }
+
+  function selectItem(value: string, label: string): void {
+    // Update trigger label
+    const labelEl = trigger.querySelector('.pip-select-label');
+    if (labelEl) labelEl.textContent = label;
+
+    // Update selected state on options
+    dropdown.querySelectorAll('.pip-select-option').forEach(el => {
+      el.classList.toggle('selected', (el as HTMLElement).dataset.value === value);
+    });
+
+    closeDropdown();
+
+    // Notify extension
     sendToExtension({
       type: 'requestPageData',
       payload: { pageId, projectFilter: value || undefined },
     });
+  }
+
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    wrapper.classList.toggle('open');
   });
 
-  container.prepend(select);
+  dropdown.addEventListener('click', (e) => {
+    const target = (e.target as HTMLElement).closest('.pip-select-option') as HTMLElement | null;
+    if (!target) return;
+    selectItem(target.dataset.value ?? '', target.textContent ?? '');
+  });
+
+  // Close on click outside
+  document.addEventListener('click', (e) => {
+    if (!wrapper.contains(e.target as Node)) {
+      closeDropdown();
+    }
+  });
+
+  // Close on Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeDropdown();
+  });
+
+  container.prepend(wrapper);
+}
+
+function renderDisabled(container: HTMLElement, text: string): void {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'pip-select disabled';
+
+  const trigger = document.createElement('button');
+  trigger.className = 'pip-select-trigger';
+  trigger.disabled = true;
+  trigger.innerHTML = `<span class="pip-select-label">${escapeHtml(text)}</span>`;
+
+  wrapper.appendChild(trigger);
+  container.prepend(wrapper);
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

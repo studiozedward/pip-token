@@ -229,6 +229,17 @@ body {
   border: 1px solid var(--alarm-red);
 }
 
+.statusbar-sync {
+  flex: 1;
+  text-align: center;
+  letter-spacing: 1.5px;
+  padding: 4px 8px;
+  animation: sync-blink 0.8s step-end infinite;
+}
+@keyframes sync-blink {
+  50% { opacity: 0.3; }
+}
+
 /* Fill bar (context page) */
 .fillbar-label {
   display: flex;
@@ -468,6 +479,7 @@ body {
   padding: 10px;
   min-height: 120px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
@@ -523,7 +535,87 @@ body {
   background: var(--green-mid);
 }
 
-/* Dropdown / selector */
+/* Custom Pip-Boy dropdown */
+.pip-select {
+  position: relative;
+  display: inline-block;
+}
+.pip-select-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--green-bright);
+  background: var(--bg);
+  border: 1px solid var(--green-mid);
+  padding: 2px 6px;
+  font-family: var(--font-stack);
+  cursor: pointer;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+}
+.pip-select-trigger:hover {
+  border-color: var(--green-bright);
+}
+.pip-select-trigger:focus {
+  outline: 1px solid var(--green-bright);
+}
+.pip-select.disabled .pip-select-trigger {
+  color: var(--green-dim);
+  border-color: var(--green-darker);
+  cursor: default;
+}
+.pip-select-arrow {
+  font-size: 8px;
+  opacity: 0.7;
+}
+.pip-select-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--bg);
+  border: 1px solid var(--green-mid);
+  border-top: none;
+  z-index: 30;
+}
+.pip-select.open .pip-select-dropdown {
+  display: block;
+}
+.pip-select-option {
+  padding: 3px 6px;
+  font-size: 11px;
+  font-family: var(--font-stack);
+  color: var(--green-mid);
+  cursor: pointer;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+}
+.pip-select-option:hover {
+  background: var(--green-darker);
+  color: var(--green-bright);
+}
+.pip-select-option.selected {
+  color: var(--green-bright);
+}
+.pip-select-dropdown::-webkit-scrollbar {
+  width: 4px;
+}
+.pip-select-dropdown::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+.pip-select-dropdown::-webkit-scrollbar-thumb {
+  background: var(--green-darker);
+  border-radius: 2px;
+}
+.pip-select-dropdown::-webkit-scrollbar-thumb:hover {
+  background: var(--green-mid);
+}
+
+/* Native select (settings dropdowns on about/onboarding pages) */
 .project-selector {
   font-size: 11px;
   color: var(--green-bright);
@@ -533,7 +625,6 @@ body {
   font-family: var(--font-stack);
   cursor: pointer;
 }
-
 .project-selector:focus {
   outline: 1px solid var(--green-bright);
 }
@@ -615,12 +706,63 @@ body {
 
 /* Chart SVG container */
 .chart-svg-container {
+  position: relative;
   width: 100%;
   min-height: 160px;
 }
 .chart-svg-container svg {
   width: 100%;
   height: auto;
+}
+
+/* Chart legend */
+.chart-legend {
+  display: flex;
+  gap: 14px;
+  font-size: 10px;
+  padding: 6px 0 2px;
+  color: var(--green-bright);
+  letter-spacing: 0.5px;
+}
+.chart-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.chart-legend-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+}
+.chart-legend-peak {
+  background: var(--green-bright);
+}
+.chart-legend-offpeak {
+  background: var(--green-dim);
+  opacity: 0.6;
+}
+.chart-legend-limit {
+  background: var(--alarm-red);
+}
+
+/* Chart bar tooltip */
+.chart-tooltip {
+  display: none;
+  position: absolute;
+  background: var(--bg);
+  border: 1px solid var(--green-bright);
+  padding: 6px 8px;
+  font-size: 10px;
+  font-family: var(--font-stack);
+  color: var(--green-bright);
+  letter-spacing: 0.5px;
+  pointer-events: none;
+  z-index: 20;
+  white-space: nowrap;
+  line-height: 1.6;
+}
+.chart-tooltip-hits {
+  color: var(--alarm-red);
 }
 
 /* ===== M5: Sync modal overlay ===== */

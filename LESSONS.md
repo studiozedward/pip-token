@@ -2,6 +2,35 @@
 
 A running log of non-obvious things learned during the build. Newest at the top. See `docs/REPO_SETUP.md` for the format and when to add an entry.
 
+## Window-based token totals break on resync when rate limits exist
+
+**Date:** 2026-04-09
+**Area:** `src/domain/liveStats.ts`, `src/webview/messageHandler.ts`
+
+The "All Projects" view on LIVE/SESSION originally read token totals from the `windows` table (atomic counters incremented per turn). This works during normal operation, but breaks on resync: `resetAllData()` clears the window, then `rescan()` replays all JSONL files. If any rate limit events exist in the history, `handleRateLimitEvent()` closes the current window and opens a new one mid-replay. The final window only contains tokens accumulated after the last historical rate limit — not the full total.
+
+**Fix:** Switched "All Projects" to compute from the `turns` table (same approach as filtered single-session views). Added `getTurnsForSessions()` to batch-query turns for all active session IDs. Window counters remain for other uses but are no longer the source of truth for display totals.
+
+---
+
+## Native select elements are unstyable in VS Code webviews
+
+**Date:** 2026-04-09
+**Area:** `src/webview/ui/components/projectSelector.ts`
+
+The `<select>` dropdown menu is rendered by the OS, not the browser. Inside a VS Code webview this means the dropdown always appears with default system styling regardless of CSS. The closed state of the `<select>` can be styled but the open menu cannot. Replaced with a custom `.pip-select` component built from `<div>` elements for full Pip-Boy aesthetic control. Keyboard handling (Escape to close) and click-outside-to-close are manual.
+
+---
+
+## parseInt truncates float values stored in SVG data attributes
+
+**Date:** 2026-04-09
+**Area:** `src/webview/ui/components/barChart.ts`
+
+Chart tooltip hit-areas store bar values in `data-*` attributes (e.g., `data-peak="12.53"`). The tooltip handler originally read these with `parseInt()`, which silently truncates to integers — cost chart values lost their decimal places. Always use `parseFloat()` when reading numeric data attributes that may contain decimals. `parseInt()` is only safe for values known to be integers (like limit hit counts).
+
+---
+
 ## Rate limit events are logged in JSONL but not as API errors
 
 **Date:** 2026-04-08

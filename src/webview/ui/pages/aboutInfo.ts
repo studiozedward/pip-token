@@ -1,6 +1,6 @@
 import { renderMascot } from '../components/mascotPanel';
 import { sendToExtension } from '../../messageBus';
-import { updateStatusBarData } from '../components/statusBar';
+import { updateStatusBarData, setSyncing } from '../components/statusBar';
 import { showSyncModal } from '../components/syncModal';
 
 interface StatusBarData {
@@ -123,13 +123,6 @@ function populateFromPayload(container: HTMLElement, payload: AboutInfoPayload):
   }
 
   // Update toggles
-  const crtToggle = container.querySelector('[data-toggle-key="crt_flicker"]') as HTMLElement | null;
-  if (crtToggle) {
-    const isOn = currentSettings['crt_flicker'] !== 'off';
-    crtToggle.className = isOn ? 'toggle on' : 'toggle';
-    crtToggle.textContent = isOn ? 'ON' : 'OFF';
-  }
-
   const blipToggle = container.querySelector('[data-toggle-key="blip_sound"]') as HTMLElement | null;
   if (blipToggle) {
     const isOn = currentSettings['blip_sound'] === 'on';
@@ -284,6 +277,7 @@ function showResyncConfirm(container: HTMLElement): void {
 
   if (yesBtn) {
     yesBtn.addEventListener('click', () => {
+      setSyncing(true);
       sendToExtension({ type: 'resyncData' });
       confirmArea.innerHTML = `<div class="action-spinner">RESYNCING\u2026</div>`;
     });
@@ -326,7 +320,6 @@ export function renderAboutInfo(container: HTMLElement): void {
 
   const planValue = currentSettings['plan_tier'] ?? 'pro';
   const currencyValue = currentSettings['currency'] ?? 'USD';
-  const crtOn = currentSettings['crt_flicker'] !== 'off';
   const blipOn = currentSettings['blip_sound'] === 'on';
   const tz = detectTimezone();
 
@@ -341,8 +334,6 @@ export function renderAboutInfo(container: HTMLElement): void {
           <div class="aboutgrid-value">${buildSettingsDropdown('currency', CURRENCY_OPTIONS, currencyValue)}</div>
           <div class="aboutgrid-key">TIMEZONE</div>
           <div class="aboutgrid-value">${tz}</div>
-          <div class="aboutgrid-key">CRT FLICKER</div>
-          <div class="aboutgrid-value">${buildToggle('crt_flicker', crtOn)}</div>
           <div class="aboutgrid-key">BLIP SOUND</div>
           <div class="aboutgrid-value">${buildToggle('blip_sound', blipOn)}</div>
         </div>

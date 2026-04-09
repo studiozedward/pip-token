@@ -14,7 +14,6 @@ import { updateTips } from './pages/tips';
 import { updateAboutInfo } from './pages/aboutInfo';
 import { updateStatusBarData } from './components/statusBar';
 import { setSoundEnabled } from './components/blipSound';
-import { setFlickerEnabled } from './router';
 
 // Local interface to narrow the payload without using `any`
 interface StatusBarData {
@@ -59,9 +58,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const payload = message.payload as SettingsChangedPayload;
       if (payload.settings.blip_sound !== undefined) {
         setSoundEnabled(payload.settings.blip_sound === 'on');
-      }
-      if (payload.settings.crt_flicker !== undefined) {
-        setFlickerEnabled(payload.settings.crt_flicker !== 'off');
       }
       // If onboarding just completed, navigate to LIVE
       if (payload.settings.onboarding_completed_at && !router.currentPageKey) {
@@ -108,7 +104,6 @@ document.addEventListener('DOMContentLoaded', () => {
           const settings = (payload as PageDataPayload).settings;
           if (settings) {
             if (settings.blip_sound !== undefined) setSoundEnabled(settings.blip_sound === 'on');
-            if (settings.crt_flicker !== undefined) setFlickerEnabled(settings.crt_flicker !== 'off');
           }
           break;
         }
