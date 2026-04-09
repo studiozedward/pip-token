@@ -8,11 +8,12 @@ Pip-Token gives Claude Code users visibility into token consumption, peak vs off
 
 It exists because Anthropic doesn't currently expose granular usage data through any official API or in-IDE surface, and developers regularly hit session limits without warning. The developer, StudioZedward, is an avid Reddit user and is sick of seeing posts about this flooding their feed. Pip-Token reads Claude Code's local session logs and turns them into something you can actually act on.
 
-## Features (v0.1.3)
+## Features (v0.1.4)
 
 - **Real-time session view** showing input/output token splits, peak/off-peak counters, burn rate, and time-to-limit estimates
 - **Context window tracker** showing how much of Claude's working memory is in use
 - **Cache hygiene monitor** that warns you before your prompt cache expires (and tells you how much it has saved you so far)
+- **Interactive chart tooltips** with peak/off-peak/limit hit breakdown on hover
 - **Personalised limit thresholds** learned from your own usage
 - **Cost estimates** in your local currency, calculated from API list pricing
 - **Contextual advisories** that surface based on your current data
@@ -36,15 +37,15 @@ It exists because Anthropic doesn't currently expose granular usage data through
 
 ### Historical trends
 
-| Week | Month |
-|---|---|
-| ![](https://raw.githubusercontent.com/studiozedward/pip-token/main/mockups/screenshots/history-week.png) | ![](https://raw.githubusercontent.com/studiozedward/pip-token/main/mockups/screenshots/history-month.png) |
+| Month |
+|---|
+| ![](https://raw.githubusercontent.com/studiozedward/pip-token/main/mockups/screenshots/history-month.png) |
 
-### Tips, About, and first-run setup
+### Tips and About
 
-| Tips | About | Onboarding |
+| Tips | About | Glossary |
 |---|---|---|
-| ![](https://raw.githubusercontent.com/studiozedward/pip-token/main/mockups/screenshots/tips.png) | ![](https://raw.githubusercontent.com/studiozedward/pip-token/main/mockups/screenshots/about.png) | ![](https://raw.githubusercontent.com/studiozedward/pip-token/main/mockups/screenshots/onboarding.png) |
+| ![](https://raw.githubusercontent.com/studiozedward/pip-token/main/mockups/screenshots/tips-cache.png) | ![](https://raw.githubusercontent.com/studiozedward/pip-token/main/mockups/screenshots/about-info.png) | ![](https://raw.githubusercontent.com/studiozedward/pip-token/main/mockups/screenshots/about-glossary.png) |
 
 ## Why "Pip-Token"?
 
